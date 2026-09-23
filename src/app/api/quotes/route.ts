@@ -155,7 +155,9 @@ export async function searchQuotes(query: string) {
       (quote) =>
         "symbol" in quote &&
         "isYahooFinance" in quote &&
-        (quote.quoteType === "EQUITY" || quote.quoteType === "ETF"),
+        quote.quoteType === "EQUITY" ||
+        quote.quoteType === "ETF" ||
+        quote.quoteType === "CRYPTOCURRENCY",
     )
     .map((quote) => ({
       symbol: quote.symbol,
