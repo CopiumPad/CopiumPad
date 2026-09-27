@@ -9,6 +9,7 @@ import {
   Pencil,
   Play,
   RefreshCw,
+  Search,
   TrendingUp,
   Wallet,
   X,
@@ -54,6 +55,19 @@ type QuotesResponse = {
   data?: QuoteDto[];
   displayCurrency?: string;
   displayCurrencyUsdRate?: number | null;
+  error?: string;
+};
+
+type SearchResult = {
+  symbol: string;
+  name: string;
+  exchange: string;
+  type: string;
+};
+
+type SearchResponse = {
+  success: boolean;
+  data?: SearchResult[];
   error?: string;
 };
 
@@ -145,6 +159,11 @@ export default function Home() {
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [displayCurrency, setDisplayCurrency] = useState("USD");
   const [displayCurrencyUsdRate, setDisplayCurrencyUsdRate] = useState<number | null>(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [isPositionDialogOpen, setIsPositionDialogOpen] = useState(false);
   const [positionDialogInitial, setPositionDialogInitial] = useState<Partial<Holding>>({});
   const quoteSymbols = useMemo(
@@ -305,6 +324,43 @@ export default function Home() {
 
   function removeHolding(symbol: string) {
     removePosition(symbol);
+  }
+
+  async function searchAssets(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const query = searchQuery.trim();
+    if (!query) {
+      setSearchResults([]);
+      setHasSearched(false);
+      setSearchError(null);
+      return;
+    }
+
+    setIsSearching(true);
+    setSearchError(null);
+    try {
+      const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+      const payload = (await response.json()) as SearchResponse;
+      if (!response.ok || !payload.success || payload.data === undefined) {
+        throw new Error(payload.error ?? "Failed to search assets");
+      }
+      setSearchResults(payload.data);
+      setHasSearched(true);
+    } catch (error) {
+      setSearchResults([]);
+      setHasSearched(false);
+      setSearchError(error instanceof Error ? error.message : "Failed to search assets");
+    } finally {
+      setIsSearching(false);
+    }
+  }
+
+  function selectSearchResult(result: SearchResult) {
+    setPositionDialogInitial({ symbol: result.symbol, name: result.name });
+    setIsPositionDialogOpen(true);
+    setSearchQuery("");
+    setSearchResults([]);
+    setSearchError(null);
   }
 
   function openNewPositionDialog() {
@@ -504,6 +560,57 @@ export default function Home() {
                 Refresh Quotes
               </button>
             </div>
+          </div>
+          <div className="border-b border-zinc-800 px-5 py-4">
+            <form onSubmit={searchAssets} className="flex max-w-2xl gap-2">
+              <div className="relative min-w-0 flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" aria-hidden />
+                <input
+                  aria-label="Search assets to add to Watchlists"
+                  value={searchQuery}
+                  onChange={(event) => {
+                    setSearchQuery(event.target.value);
+                    setSearchResults([]);
+                    setHasSearched(false);
+                    setSearchError(null);
+                  }}
+                  placeholder="Search ticker, company, or crypto..."
+                  className="w-full rounded-lg border border-zinc-700 bg-zinc-950 py-2 pl-9 pr-3 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-emerald-400"
+                />
+              </div>
+              <button type="submit" disabled={isSearching} className="rounded-lg bg-emerald-400 px-4 py-2 text-sm font-medium text-zinc-950 transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60">
+                {isSearching ? "Searching..." : "Search"}
+              </button>
+            </form>
+            {searchError !== null ? <p className="mt-2 text-xs text-red-400">{searchError}</p> : null}
+            {searchResults.length > 0 ? (
+              <div className="mt-3 max-w-2xl divide-y divide-zinc-800 rounded-lg border border-zinc-800 bg-zinc-950">
+                {searchResults.map((result) => {
+                  const alreadyHeld = holdings.some((holding) => holding.symbol.toUpperCase() === result.symbol.toUpperCase());
+                  return (
+                    <button
+                      key={`${result.symbol}-${result.exchange}`}
+                      type="button"
+                      onClick={() => selectSearchResult(result)}
+                      disabled={alreadyHeld}
+                      className="flex w-full items-center justify-between gap-4 px-3 py-3 text-left transition hover:bg-zinc-900 disabled:cursor-default disabled:hover:bg-transparent"
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate font-mono text-sm text-zinc-100">{result.symbol}</span>
+                        <span className="block truncate text-xs text-zinc-500">{result.name}</span>
+                      </span>
+                      <span className="shrink-0 text-right text-xs text-zinc-500">
+                        <span className="block">{result.exchange} · {result.type}</span>
+                        {alreadyHeld ? <span className="mt-1 block text-emerald-500">In Watchlists</span> : <span className="mt-1 block text-emerald-400">Add holding</span>}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
+            {!isSearching && hasSearched && searchResults.length === 0 && searchError === null ? (
+              <p className="mt-2 text-xs text-zinc-500">No matching assets found.</p>
+            ) : null}
           </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[920px] text-left text-sm">
