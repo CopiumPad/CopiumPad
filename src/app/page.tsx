@@ -30,7 +30,9 @@ import {
   type QuoteSnapshot,
 } from "@/lib/finance/portfolio";
 import { PositionDialog } from "@/components/position-dialog";
+import { PortfolioVisualization } from "@/components/portfolio-visualization";
 import { usePortfolioStorage } from "@/hooks/usePortfolioStorage";
+import { usePortfolioActions } from "@/hooks/usePortfolioActions";
 
 type QuoteDto = {
   symbol: string;
@@ -153,6 +155,7 @@ export default function Home() {
     removePosition,
     updatePosition,
   } = usePortfolioStorage();
+  const { actions, isHydrated: areActionsHydrated, addActions, removeAction } = usePortfolioActions();
   const [quotes, setQuotes] = useState<QuoteSnapshot[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -165,6 +168,7 @@ export default function Home() {
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [isPositionDialogOpen, setIsPositionDialogOpen] = useState(false);
+  const [activeView, setActiveView] = useState<"table" | "visualization">("table");
   const [positionDialogInitial, setPositionDialogInitial] = useState<Partial<Holding>>({});
   const quoteSymbols = useMemo(
     () => [...new Set(holdings.map((holding) => holding.symbol.toUpperCase()))].join(","),
@@ -403,12 +407,10 @@ export default function Home() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href="/"
-              className="rounded-full border border-emerald-400/40 bg-emerald-400/10 px-3 py-1.5 text-xs font-medium text-emerald-300"
-            >
-              Watchlists
-            </Link>
+            <div className="inline-flex rounded-lg border border-zinc-800 bg-zinc-950 p-1" aria-label="Dashboard view">
+              <button type="button" aria-pressed={activeView === "table"} onClick={() => setActiveView("table")} className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${activeView === "table" ? "bg-emerald-400 text-zinc-950" : "text-zinc-400 hover:text-zinc-100"}`}>Table View</button>
+              <button type="button" aria-pressed={activeView === "visualization"} onClick={() => setActiveView("visualization")} className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${activeView === "visualization" ? "bg-emerald-400 text-zinc-950" : "text-zinc-400 hover:text-zinc-100"}`}>Visualization View</button>
+            </div>
             <Link
               href="/explore"
               className="rounded-full border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-300 transition hover:border-zinc-700 hover:bg-zinc-800"
@@ -532,14 +534,14 @@ export default function Home() {
           </article>
         </section>
 
-        <section className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/40">
+        {activeView === "table" ? <section className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/40">
           <div className="flex items-start justify-between gap-4 border-b border-zinc-800 px-5 py-4">
             <div>
               <h2 className="text-sm font-medium tracking-wide text-zinc-200">
                 Watchlist
               </h2>
               <p className="mt-1 text-xs text-zinc-500">
-                Live marks for your selected US and Singapore assets
+                Live marks for your selected markets
               </p>
             </div>
             <div className="flex shrink-0 gap-2">
@@ -718,7 +720,19 @@ export default function Home() {
               ))}
             </table>
           </div>
-        </section>
+        </section> : (
+          <PortfolioVisualization
+            positions={positions}
+            quotes={quotes}
+            actions={areActionsHydrated ? actions : []}
+            displayCurrency={displayCurrency}
+            displayCurrencyUsdRate={displayCurrencyUsdRate}
+            isRefreshing={isRefreshing}
+            isActionsHydrated={areActionsHydrated}
+            onAddActions={addActions}
+            onRemoveAction={removeAction}
+          />
+        )}
 
         <section className="flex flex-col gap-5 rounded-xl border border-zinc-800 bg-gradient-to-br from-zinc-900 via-zinc-950 to-emerald-950/30 p-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="max-w-xl">
