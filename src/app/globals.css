@@ -128,3 +128,24 @@
     @apply font-sans;
   }
 }
+
+@keyframes allocation-row-enter {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.allocation-row-enter {
+  animation: allocation-row-enter 240ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .allocation-row-enter {
+    animation: none;
+  }
+}
