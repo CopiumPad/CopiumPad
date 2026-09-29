@@ -4,13 +4,16 @@ import { useMemo, useState } from "react";
 import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
 import {
   allocationBreakdown,
+  buildPortfolioTimeline,
   categoryForQuote,
   type PortfolioAction,
   type PositionMark,
   type QuoteSnapshot,
 } from "@/lib/finance/portfolio";
 import { sumDecimals, toDecimal } from "@/lib/finance/money";
+import { AllocationPieChart } from "@/components/allocation-pie-chart";
 import { PortfolioActionDialog } from "@/components/portfolio-action-dialog";
+import { PortfolioLineChart } from "@/components/portfolio-line-chart";
 
 type PortfolioVisualizationProps = {
   positions: PositionMark[];
@@ -38,7 +41,6 @@ function formatValue(value: ReturnType<typeof toDecimal>, currency: string, usdR
 function actionDate(timestamp: number): string {
   return new Intl.DateTimeFormat("en-US", {
     dateStyle: "medium",
-    timeStyle: "short",
   }).format(new Date(timestamp));
 }
 
@@ -114,6 +116,7 @@ export function PortfolioVisualization({
         value: row.value,
         weight: row.weight,
       }));
+  const chartPoints = useMemo(() => buildPortfolioTimeline(actions, positions, quotes), [actions, positions, quotes]);
 
   return (
     <div className="space-y-5">
@@ -133,35 +136,48 @@ export function PortfolioVisualization({
         {allocations.length === 0 || totalValue.isZero() ? (
           <p className="px-5 py-10 text-center text-sm text-zinc-500">Allocation appears when live quotes are available.</p>
         ) : (
-          <div className="divide-y divide-zinc-800/80 px-5">
-            {displayRows.map((row, index) => {
-              const isExpanded = categorized && expandedCategory === row.key;
-              return (
-                <div key={row.key} className="allocation-row-enter py-4" style={{ animationDelay: `${Math.min(index, 8) * 35}ms` }}>
-                  <button type="button" onClick={() => categorized && setExpandedCategory(isExpanded ? null : row.key)} disabled={!categorized} aria-expanded={categorized ? isExpanded : undefined} className={`grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 text-left ${categorized ? "cursor-pointer" : "cursor-default"}`}>
-                    <span className="flex min-w-0 items-center gap-2 text-sm text-zinc-200">
-                      <span className="size-2 shrink-0 rounded-sm" style={{ backgroundColor: CATEGORY_COLORS[index % CATEGORY_COLORS.length] }} />
-                      <span className="truncate">{row.label}</span>
-                      {categorized ? (isExpanded ? <ChevronDown className="size-3.5 text-zinc-500" aria-hidden /> : <ChevronRight className="size-3.5 text-zinc-500" aria-hidden />) : null}
-                    </span>
-                    <span className="text-right font-mono text-xs text-zinc-300">{formatValue(row.value, displayCurrency, displayCurrencyUsdRate)} <span className="ml-2 text-zinc-500">{row.weight.toDecimalPlaces(2).toFixed(2)}%</span></span>
-                    <span className="col-span-2 h-1.5 overflow-hidden bg-zinc-800">
-                      <span className="block h-full transition-[width] duration-500 ease-out" style={{ width: `${Math.max(0, Math.min(row.weight.toNumber(), 100))}%`, backgroundColor: CATEGORY_COLORS[index % CATEGORY_COLORS.length] }} />
-                    </span>
-                  </button>
-                  {categorized && isExpanded ? (
-                    <div className="ml-4 mt-3 space-y-2 border-l border-zinc-800 pl-4">
-                      {row.members.map((member) => (
-                        <div key={member.symbol} className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-xs">
-                          <span className="truncate text-zinc-400">{member.name} <span className="text-zinc-600">{member.symbol}</span></span>
-                          <span className="font-mono text-zinc-400">{formatValue(member.value, displayCurrency, displayCurrencyUsdRate)} · {member.weight.toFixed(2)}%</span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-              );
-            })}
+          <div className="space-y-5 px-5 py-5">
+            <AllocationPieChart
+              rows={displayRows.map((row, index) => ({
+                key: row.key,
+                label: row.label,
+                value: row.value,
+                weight: row.weight,
+                color: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
+              }))}
+              currency={displayCurrency}
+              usdRate={displayCurrencyUsdRate}
+            />
+            <div className="divide-y divide-zinc-800/80">
+              {displayRows.map((row, index) => {
+                const isExpanded = categorized && expandedCategory === row.key;
+                return (
+                  <div key={row.key} className="allocation-row-enter py-4" style={{ animationDelay: `${Math.min(index, 8) * 35}ms` }}>
+                    <button type="button" onClick={() => categorized && setExpandedCategory(isExpanded ? null : row.key)} disabled={!categorized} aria-expanded={categorized ? isExpanded : undefined} className={`grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 text-left ${categorized ? "cursor-pointer" : "cursor-default"}`}>
+                      <span className="flex min-w-0 items-center gap-2 text-sm text-zinc-200">
+                        <span className="size-2 shrink-0 rounded-sm" style={{ backgroundColor: CATEGORY_COLORS[index % CATEGORY_COLORS.length] }} />
+                        <span className="truncate">{row.label}</span>
+                        {categorized ? (isExpanded ? <ChevronDown className="size-3.5 text-zinc-500" aria-hidden /> : <ChevronRight className="size-3.5 text-zinc-500" aria-hidden />) : null}
+                      </span>
+                      <span className="text-right font-mono text-xs text-zinc-300">{formatValue(row.value, displayCurrency, displayCurrencyUsdRate)} <span className="ml-2 text-zinc-500">{row.weight.toDecimalPlaces(2).toFixed(2)}%</span></span>
+                      <span className="col-span-2 h-1.5 overflow-hidden bg-zinc-800">
+                        <span className="block h-full transition-[width] duration-500 ease-out" style={{ width: `${Math.max(0, Math.min(row.weight.toNumber(), 100))}%`, backgroundColor: CATEGORY_COLORS[index % CATEGORY_COLORS.length] }} />
+                      </span>
+                    </button>
+                    {categorized && isExpanded ? (
+                      <div className="ml-4 mt-3 space-y-2 border-l border-zinc-800 pl-4">
+                        {row.members.map((member) => (
+                          <div key={member.symbol} className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-xs">
+                            <span className="truncate text-zinc-400">{member.name} <span className="text-zinc-600">{member.symbol}</span></span>
+                            <span className="font-mono text-zinc-400">{formatValue(member.value, displayCurrency, displayCurrencyUsdRate)} · {member.weight.toFixed(2)}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
         <div className="flex justify-between border-t border-zinc-800 px-5 py-3 text-xs text-zinc-500">
@@ -182,12 +198,15 @@ export function PortfolioVisualization({
           </div>
         </div>
         <div className="grid gap-5 px-5 py-6 md:grid-cols-[minmax(0,1fr)_220px]">
-          <div className="flex min-h-48 flex-col items-center justify-center border border-dashed border-zinc-800 px-6 text-center">
-            <div className="mb-3 flex h-14 w-full items-end gap-2 opacity-35" aria-hidden>
-              {[36, 52, 43, 68, 56, 81, 64, 92, 73, 100].map((height, index) => <span key={index} className="flex-1 bg-emerald-400" style={{ height: `${height}%` }} />)}
-            </div>
-            <h3 className="text-sm font-medium text-zinc-300">Historical chart unavailable</h3>
-            <p className="mt-1 max-w-lg text-xs leading-5 text-zinc-500">This quote source provides current prices but not historical closes or historical FX rates. A reliable value-over-time series cannot be calculated yet; action entries are retained without fabricating past performance.</p>
+          <div className="flex min-h-48 flex-col items-center justify-center rounded-lg border border-zinc-800 bg-zinc-950/30 p-3 text-center">
+            {chartPoints.length === 0 ? (
+              <>
+                <h3 className="text-sm font-medium text-zinc-300">No portfolio actions recorded yet.</h3>
+                <p className="mt-2 max-w-lg text-xs leading-5 text-zinc-500">No portfolio actions recorded yet. Add an action or set an initial baseline.</p>
+              </>
+            ) : (
+              <PortfolioLineChart points={chartPoints} currency={displayCurrency} displayCurrencyUsdRate={displayCurrencyUsdRate} />
+            )}
           </div>
           <div className="flex flex-col justify-center border-l border-zinc-800 pl-5">
             <span className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">Current marked value</span>
