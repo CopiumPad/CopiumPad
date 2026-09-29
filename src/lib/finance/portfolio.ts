@@ -16,6 +16,20 @@ export type Holding = {
   averageCost: string;
 };
 
+export type AssetCategory = "Crypto" | "US Market" | "SG Market" | "ETF" | "Other" | `${string} Market`;
+export type ActionDirection = "BUY" | "SELL";
+
+export type PortfolioAction = {
+  id: string;
+  timestamp: number;
+  assetId: string;
+  category: AssetCategory;
+  quantity: string;
+  price: string;
+  direction: ActionDirection;
+  isInitialBaseline?: boolean;
+};
+
 export type QuoteSnapshot = {
   symbol: string;
   name: string;
@@ -60,6 +74,55 @@ export type PortfolioTotals = {
   dayPnl: Decimal;
   dayReturnPercent: Decimal;
 };
+
+export function categoryForQuote(quote: QuoteSnapshot | undefined): AssetCategory {
+  if (quote === undefined) return "Other";
+  const quoteType = quote.quoteType?.toUpperCase() ?? "";
+  if (quoteType.includes("CRYPTO")) return "Crypto";
+  if (quoteType === "ETF") return "ETF";
+  const region = quote.region?.trim().toUpperCase();
+  if (!region) return "Other";
+  if (region === "US") return "US Market";
+  if (region === "SG") return "SG Market";
+  return `${region} Market`;
+}
+
+export function allocationBreakdown(
+  positions: readonly PositionMark[],
+  quotes: readonly QuoteSnapshot[],
+) {
+  const quoteBySymbol = new Map(quotes.map((quote) => [quote.symbol.toUpperCase(), quote]));
+  const marked = positions.flatMap((position) => {
+    if (position.marketValueUsd === null || position.marketValueUsd.isNegative()) return [];
+    return [{
+      symbol: position.symbol,
+      name: position.name,
+      category: categoryForQuote(quoteBySymbol.get(position.symbol.toUpperCase())),
+      value: position.marketValueUsd,
+    }];
+  });
+  const total = sumDecimals(marked.map((position) => position.value));
+
+  return marked.map((position) => ({
+    ...position,
+    weight: total.isZero() ? new Decimal(0) : position.value.div(total).times(100),
+  }));
+}
+
+export function quantityAfterActions(
+  actions: readonly PortfolioAction[],
+  assetId: string,
+  timestamp = Number.POSITIVE_INFINITY,
+): Decimal {
+  return [...actions]
+    .filter((action) => action.assetId.toUpperCase() === assetId.toUpperCase() && action.timestamp <= timestamp)
+    .sort((left, right) => left.timestamp - right.timestamp)
+    .reduce((quantity, action) => {
+      const amount = toDecimal(action.quantity);
+      if (action.isInitialBaseline) return amount;
+      return action.direction === "BUY" ? quantity.plus(amount) : quantity.minus(amount);
+    }, new Decimal(0));
+}
 
 export function markPosition(
   holding: Holding,

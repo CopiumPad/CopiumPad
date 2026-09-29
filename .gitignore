@@ -19,3 +19,4 @@ coverage/
 *.cursorrules
 AGENTS.md
 CLAUDE.md
+/prompts/
