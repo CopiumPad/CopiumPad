@@ -2,12 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { toDecimal } from "@/lib/finance/money";
-import type { PositionMark, QuoteSnapshot } from "@/lib/finance/portfolio";
 import {
   categoryForQuote,
+  parseDateInputValue,
   quantityAfterActions,
   type ActionDirection,
   type PortfolioAction,
+  type PositionMark,
+  type QuoteSnapshot,
 } from "@/lib/finance/portfolio";
 
 type PortfolioActionDialogProps = {
@@ -19,9 +21,11 @@ type PortfolioActionDialogProps = {
   onSubmit: (action: PortfolioAction) => void;
 };
 
-function localDateTimeValue(date: Date): string {
-  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
-  return local.toISOString().slice(0, 16);
+function localDateValue(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function positiveDecimal(value: string): boolean {
@@ -54,7 +58,7 @@ export function PortfolioActionDialog({
     const timer = window.setTimeout(() => {
       hasOpened.current = true;
       setAssetId(positions[0]?.symbol ?? "");
-      setTimestamp(localDateTimeValue(new Date()));
+      setTimestamp(localDateValue(new Date()));
       setQuantity("");
       setPrice(positions[0]?.livePrice?.toString() ?? "");
       setDirection("BUY");
@@ -68,9 +72,9 @@ export function PortfolioActionDialog({
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const position = positions.find((item) => item.symbol.toUpperCase() === assetId.trim().toUpperCase());
-    const actionTimestamp = new Date(timestamp).getTime();
+    const actionTimestamp = parseDateInputValue(timestamp);
     if (!position || !Number.isFinite(actionTimestamp) || !positiveDecimal(quantity) || !positiveDecimal(price)) {
-      setError("Choose a tracked asset and enter a valid time, positive quantity, and positive price.");
+      setError("Choose a tracked asset and enter a valid date, positive quantity, and positive price.");
       return;
     }
 
@@ -106,8 +110,8 @@ export function PortfolioActionDialog({
           <button type="button" onClick={onClose} className="text-zinc-500 hover:text-zinc-200" aria-label="Close dialog">×</button>
         </div>
         <form onSubmit={submit} className="mt-6 space-y-4">
-          <label className="block text-sm text-zinc-300">Date &amp; time
-            <input required type="datetime-local" value={timestamp} onChange={(event) => setTimestamp(event.target.value)} className="mt-1 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-emerald-400" />
+          <label className="block text-sm text-zinc-300">Date
+            <input required type="date" value={timestamp} onChange={(event) => setTimestamp(event.target.value)} className="mt-1 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-emerald-400" />
           </label>
           <label className="block text-sm text-zinc-300">Asset
             <input required list="portfolio-action-assets" value={assetId} onChange={(event) => {
