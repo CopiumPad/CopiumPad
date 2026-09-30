@@ -139,4 +139,29 @@ describe("allocation categories and action replay", () => {
     expect(parseDateInputValue("2026-09-29")).toBe(new Date("2026-09-29T12:00:00").getTime());
     expect(toDateInputValue(new Date("2026-09-29T12:00:00").getTime())).toBe("2026-09-29");
   });
+
+  it("values historical market prices in USD across multiple currencies", () => {
+    const day = 86_400_000;
+    const singapore = markPosition(
+      { symbol: "D05.SI", name: "DBS", quantity: "10", averageCost: "100" },
+      { symbol: "D05.SI", name: "DBS", price: "120", changePercent: "0", currency: "SGD", usdRate: "0.75" },
+    );
+    const us = markPosition(
+      { symbol: "VOO", name: "VOO", quantity: "1", averageCost: "100" },
+      { symbol: "VOO", name: "VOO", price: "200", changePercent: "0", currency: "USD", usdRate: "1" },
+    );
+    const actions: PortfolioAction[] = [
+      { id: "sg-buy", timestamp: day, assetId: "D05.SI", category: "SG Market", quantity: "10", price: "100", direction: "BUY" },
+      { id: "us-buy", timestamp: day, assetId: "VOO", category: "US Market", quantity: "1", price: "100", direction: "BUY" },
+    ];
+
+    const timeline = buildPortfolioTimeline(actions, [singapore, us], [], [
+      { symbol: "D05.SI", points: [{ timestamp: day, price: 100 }, { timestamp: day * 2, price: 110 }] },
+      { symbol: "VOO", points: [{ timestamp: day, price: 100 }, { timestamp: day * 2, price: 150 }] },
+    ]);
+
+    expect(timeline[0].totalValue).toBe(850);
+    expect(timeline[1].timestamp - timeline[0].timestamp).toBe(day);
+    expect(timeline[1].totalValue).toBe(975);
+  });
 });
