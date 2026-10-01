@@ -230,3 +230,141 @@ export function portfolioTotals(positions: readonly PositionMark[]): PortfolioTo
     dayReturnPercent: returnPercent(totalValue, previousValue),
   };
 }
+
+export type PortfolioChartPoint = {
+  timestamp: number;
+  totalValue: number;
+  isDiscontinuous?: boolean;
+};
+
+export type PortfolioPriceHistory = {
+  symbol: string;
+  points: Array<{ timestamp: number; price: number }>;
+};
+
+export function toDateInputValue(timestamp: number): string {
+  const date = new Date(timestamp);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+export function parseDateInputValue(value: string): number {
+  const date = new Date(`${value}T12:00:00`);
+  return Number.isNaN(date.getTime()) ? Number.NaN : date.getTime();
+}
+
+function historicalPriceAt(
+  points: readonly { timestamp: number; price: number }[],
+  timestamp: number,
+): number | null {
+  let low = 0;
+  let high = points.length - 1;
+  let result: number | null = null;
+
+  while (low <= high) {
+    const middle = Math.floor((low + high) / 2);
+    if (points[middle].timestamp <= timestamp) {
+      result = points[middle].price;
+      low = middle + 1;
+    } else {
+      high = middle - 1;
+    }
+  }
+
+  return result;
+}
+
+function totalValueAtTimestamp(
+  actions: readonly PortfolioAction[],
+  positions: readonly PositionMark[],
+  quotes: readonly QuoteSnapshot[],
+  historyBySymbol: ReadonlyMap<string, readonly { timestamp: number; price: number }[]>,
+  targetTimestamp: number,
+  useLivePrices: boolean,
+): Decimal {
+  const quoteBySymbol = new Map(quotes.map((quote) => [quote.symbol.toUpperCase(), quote]));
+
+  return positions.reduce((total, position) => {
+    const quantity = quantityAfterActions(actions, position.symbol, targetTimestamp);
+    const quote = quoteBySymbol.get(position.symbol.toUpperCase());
+    const historicalPrice = historicalPriceAt(
+      historyBySymbol.get(position.symbol.toUpperCase()) ?? [],
+      targetTimestamp,
+    );
+    const lastActionPrice = [...actions]
+      .filter((action) => action.assetId.toUpperCase() === position.symbol.toUpperCase() && action.timestamp <= targetTimestamp)
+      .sort((left, right) => right.timestamp - left.timestamp)[0]?.price;
+    const price = useLivePrices
+      ? position.livePrice ?? (quote ? toDecimal(quote.price) : null)
+      : historicalPrice === null
+        ? lastActionPrice === undefined
+          ? position.livePrice ?? (quote ? toDecimal(quote.price) : null)
+          : toDecimal(lastActionPrice)
+        : toDecimal(historicalPrice);
+    const usdRate = position.usdRate ?? (
+      quote?.usdRate == null
+        ? quote?.currency === undefined || quote.currency.toUpperCase() === "USD"
+          ? new Decimal(1)
+          : null
+        : toDecimal(quote.usdRate)
+    );
+
+    if (quantity.isZero() || price === null || usdRate === null || !Number.isFinite(price.toNumber())) {
+      return total;
+    }
+
+    return total.plus(quantity.times(price).times(usdRate));
+  }, new Decimal(0));
+}
+
+export function buildPortfolioTimeline(
+  actions: readonly PortfolioAction[],
+  positions: readonly PositionMark[],
+  quotes: readonly QuoteSnapshot[],
+  history: readonly PortfolioPriceHistory[] = [],
+): PortfolioChartPoint[] {
+  const sortedActions = [...actions]
+    .filter((action) => Number.isFinite(action.timestamp))
+    .sort((left, right) => left.timestamp - right.timestamp);
+  if (sortedActions.length === 0) return [];
+
+  const finalTimestamp = Date.now();
+  const firstActionTimestamp = sortedActions[0].timestamp;
+  const historyBySymbol = new Map(history.map((item) => [
+    item.symbol.toUpperCase(),
+    [...item.points]
+      .filter((point) => Number.isFinite(point.timestamp) && Number.isFinite(point.price))
+      .sort((left, right) => left.timestamp - right.timestamp),
+  ]));
+  const baselineTimestamps = new Set(
+    sortedActions.filter((action) => action.isInitialBaseline).map((action) => action.timestamp),
+  );
+  const timestamps = new Set<number>([
+    ...sortedActions.map((action) => action.timestamp),
+    ...[...historyBySymbol.values()].flatMap((series) => series
+      .map((point) => point.timestamp)
+      .filter((timestamp) => timestamp >= firstActionTimestamp && timestamp <= finalTimestamp)),
+    finalTimestamp,
+  ]);
+
+  return [...timestamps]
+    .sort((left, right) => left - right)
+    .map((timestamp) => {
+      const value = totalValueAtTimestamp(
+        actions,
+        positions,
+        quotes,
+        historyBySymbol,
+        timestamp,
+        timestamp === finalTimestamp,
+      );
+      return {
+        timestamp,
+        totalValue: Number.isFinite(value.toNumber()) ? value.toNumber() : 0,
+        isDiscontinuous: baselineTimestamps.has(timestamp),
+      };
+    })
+    .filter((point) => Number.isFinite(point.totalValue));
+}

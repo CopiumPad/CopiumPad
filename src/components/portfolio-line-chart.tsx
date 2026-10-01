@@ -1,11 +1,7 @@
-type ChartPoint = {
-  timestamp: number;
-  totalValue: number;
-  isDiscontinuous?: boolean;
-};
+import type { PortfolioChartPoint } from "@/lib/finance/portfolio";
 
 type PortfolioLineChartProps = {
-  points: ChartPoint[];
+  points: PortfolioChartPoint[];
   currency: string;
   displayCurrencyUsdRate: number | null;
 };
@@ -31,9 +27,12 @@ export function PortfolioLineChart({ points, currency, displayCurrencyUsdRate }:
   const maxValue = Math.max(...values);
   const valueRange = maxValue - minValue || 1;
 
-  const xFor = (index: number) => {
-    if (points.length <= 1) return width / 2;
-    return padding + (index / (points.length - 1)) * (width - padding * 2);
+  const firstTimestamp = points[0].timestamp;
+  const lastTimestamp = points[points.length - 1].timestamp;
+  const timeRange = lastTimestamp - firstTimestamp;
+  const xFor = (timestamp: number) => {
+    if (timeRange <= 0) return width / 2;
+    return padding + ((timestamp - firstTimestamp) / timeRange) * (width - padding * 2);
   };
 
   const yFor = (value: number) => {
@@ -41,8 +40,8 @@ export function PortfolioLineChart({ points, currency, displayCurrencyUsdRate }:
     return height - padding - ratio * (height - padding * 2);
   };
 
-  const segments: ChartPoint[][] = [];
-  let currentSegment: ChartPoint[] = [];
+  const segments: PortfolioChartPoint[][] = [];
+  let currentSegment: PortfolioChartPoint[] = [];
 
   for (const point of points) {
     if (currentSegment.length === 0) {
@@ -80,7 +79,7 @@ export function PortfolioLineChart({ points, currency, displayCurrencyUsdRate }:
         {segments.map((segment, index) => {
           if (segment.length < 2) return null;
           const d = segment
-            .map((point, pointIndex) => `${pointIndex === 0 ? "M" : "L"} ${xFor(points.indexOf(point))} ${yFor(point.totalValue)}`)
+            .map((point, pointIndex) => `${pointIndex === 0 ? "M" : "L"} ${xFor(point.timestamp)} ${yFor(point.totalValue)}`)
             .join(" ");
 
           return (
@@ -96,19 +95,16 @@ export function PortfolioLineChart({ points, currency, displayCurrencyUsdRate }:
           );
         })}
 
-        {points.map((point, index) => (
-          <g key={`${point.timestamp}-${index}`}>
-            <circle cx={xFor(index)} cy={yFor(point.totalValue)} r={3} fill="#34d399" stroke="#06251a" strokeWidth={2} />
-          </g>
-        ))}
-
         {points.length > 0 ? (
           <g>
             <text x={padding} y={height - 8} fill="#a1a1aa" fontSize="10">
-              {new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(new Date(points[0].timestamp))}
+              {new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(new Date(firstTimestamp))}
             </text>
-            <text x={width - padding - 60} y={height - 8} fill="#a1a1aa" fontSize="10">
-              {new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(new Date(points[points.length - 1].timestamp))}
+            <text x={width / 2} y={height - 8} textAnchor="middle" fill="#a1a1aa" fontSize="10">
+              {new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(new Date(firstTimestamp + timeRange / 2))}
+            </text>
+            <text x={width - padding} y={height - 8} textAnchor="end" fill="#a1a1aa" fontSize="10">
+              {new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(new Date(lastTimestamp))}
             </text>
           </g>
         ) : null}

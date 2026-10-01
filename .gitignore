@@ -15,8 +15,9 @@ pnpm-debug.log*
 .idea/
 .DS_Store
 coverage/
+pull_requests/
+prompts/
 *.tsbuildinfo
 *.cursorrules
 AGENTS.md
 CLAUDE.md
-/prompts/

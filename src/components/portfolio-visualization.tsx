@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
 import {
   allocationBreakdown,
@@ -8,6 +8,7 @@ import {
   categoryForQuote,
   type PortfolioAction,
   type PositionMark,
+  type PortfolioPriceHistory,
   type QuoteSnapshot,
 } from "@/lib/finance/portfolio";
 import { sumDecimals, toDecimal } from "@/lib/finance/money";
@@ -58,6 +59,11 @@ export function PortfolioVisualization({
   const [categorized, setCategorized] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [isActionDialogOpen, setIsActionDialogOpen] = useState(false);
+  const [priceHistory, setPriceHistory] = useState<PortfolioPriceHistory[]>([]);
+  const historySymbols = useMemo(
+    () => [...new Set(positions.map((position) => position.symbol.toUpperCase()))].sort(),
+    [positions],
+  );
   const allocations = useMemo(() => allocationBreakdown(positions, quotes), [positions, quotes]);
   const totalValue = useMemo(() => sumDecimals(allocations.map((item) => item.value)), [allocations]);
   const categories = useMemo(() => {
@@ -116,7 +122,32 @@ export function PortfolioVisualization({
         value: row.value,
         weight: row.weight,
       }));
-  const chartPoints = useMemo(() => buildPortfolioTimeline(actions, positions, quotes), [actions, positions, quotes]);
+  useEffect(() => {
+    if (!isActionsHydrated || actions.length === 0 || historySymbols.length === 0) return;
+
+    const firstActionTimestamp = Math.min(...actions.map((action) => action.timestamp));
+    const from = Math.max(0, firstActionTimestamp - 7 * 24 * 60 * 60 * 1000);
+    const controller = new AbortController();
+
+    fetch(`/api/history?symbols=${encodeURIComponent(historySymbols.join(","))}&from=${from}`, {
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`History request failed (${response.status})`);
+        return response.json() as Promise<{ success: boolean; data?: PortfolioPriceHistory[] }>;
+      })
+      .then((payload) => setPriceHistory(payload.success ? payload.data ?? [] : []))
+      .catch((error: unknown) => {
+        if (!(error instanceof DOMException && error.name === "AbortError")) setPriceHistory([]);
+      });
+
+    return () => controller.abort();
+  }, [actions, historySymbols, isActionsHydrated]);
+
+  const chartPoints = useMemo(
+    () => buildPortfolioTimeline(actions, positions, quotes, priceHistory),
+    [actions, positions, quotes, priceHistory],
+  );
 
   return (
     <div className="space-y-5">
@@ -141,6 +172,7 @@ export function PortfolioVisualization({
               rows={displayRows.map((row, index) => ({
                 key: row.key,
                 label: row.label,
+                chartLabel: categorized ? row.label : row.key,
                 value: row.value,
                 weight: row.weight,
                 color: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
