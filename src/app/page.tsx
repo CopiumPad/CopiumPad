@@ -33,6 +33,7 @@ import { PositionDialog } from "@/components/position-dialog";
 import { PortfolioVisualization } from "@/components/portfolio-visualization";
 import { usePortfolioStorage } from "@/hooks/usePortfolioStorage";
 import { usePortfolioActions } from "@/hooks/usePortfolioActions";
+import { AccountMenu } from "@/components/account-menu";
 
 type QuoteDto = {
   symbol: string;
@@ -151,6 +152,8 @@ export default function Home() {
   const {
     positions: holdings,
     isHydrated,
+    isAuthenticated,
+    error: portfolioError,
     addPosition,
     removePosition,
     updatePosition,
@@ -407,6 +410,7 @@ export default function Home() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <AccountMenu />
             <div className="inline-flex rounded-lg border border-zinc-800 bg-zinc-950 p-1" aria-label="Dashboard view">
               <button type="button" aria-pressed={activeView === "table"} onClick={() => setActiveView("table")} className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${activeView === "table" ? "bg-emerald-400 text-zinc-950" : "text-zinc-400 hover:text-zinc-100"}`}>Table View</button>
               <button type="button" aria-pressed={activeView === "visualization"} onClick={() => setActiveView("visualization")} className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${activeView === "visualization" ? "bg-emerald-400 text-zinc-950" : "text-zinc-400 hover:text-zinc-100"}`}>Visualization View</button>
@@ -443,6 +447,8 @@ export default function Home() {
             {errorMessage}
           </p>
         ) : null}
+        {portfolioError ? <p role="alert" className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">{portfolioError}</p> : null}
+        {!isAuthenticated && isHydrated ? <p className="rounded-lg border border-zinc-800 bg-zinc-900/60 px-4 py-3 text-sm text-zinc-300">Sign in to load and save your cloud portfolio.</p> : null}
 
         <section className="grid gap-4 md:grid-cols-3">
           <article className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5">
@@ -548,7 +554,9 @@ export default function Home() {
               <button
                 type="button"
                 onClick={openNewPositionDialog}
-                className="rounded-lg bg-emerald-400 px-3 py-2 text-xs font-medium text-zinc-950 transition hover:bg-emerald-500"
+                disabled={!isAuthenticated}
+                title={isAuthenticated ? "Add holding" : "Sign in to add holdings"}
+                className="rounded-lg bg-emerald-400 px-3 py-2 text-xs font-medium text-zinc-950 transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Add holding
               </button>
