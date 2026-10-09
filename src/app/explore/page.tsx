@@ -1,18 +1,18 @@
 "use client";
 
 import {
-  Activity,
   ArrowDownRight,
   ArrowUpRight,
   ChartLine,
   ExternalLink,
-  Pill,
   Search,
   TrendingUp,
   X,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import { AppHeader } from "@/components/app-header";
 import {
   formatCompactNumber,
   formatPercent,
@@ -178,26 +178,9 @@ export default function ExplorePage() {
   }
 
   return (
-    <main className="min-h-full bg-zinc-950 font-sans text-zinc-100">
+    <motion.main initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.24, ease: "easeOut" }} className="min-h-full bg-zinc-950 font-sans text-zinc-100">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-8">
-        <header className="flex flex-col gap-4 border-b border-zinc-800 pb-6 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex size-9 items-center justify-center rounded-md border border-zinc-800 bg-zinc-900">
-              <Pill className="size-4 text-emerald-400" aria-hidden />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-semibold tracking-tight text-zinc-50">CopiumPad</h1>
-                <Activity className="size-4 text-zinc-500" aria-hidden />
-              </div>
-              <p className="mt-1 text-sm leading-6 text-zinc-400">Explore the market, then keep the useful comparisons close.</p>
-            </div>
-          </div>
-          <nav className="flex flex-wrap items-center gap-2" aria-label="Main navigation">
-            <Link href="/" className="rounded-full border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-300 transition hover:border-zinc-700 hover:bg-zinc-800">Watchlists</Link>
-            <Link href="/explore" className="rounded-full border border-emerald-400/40 bg-emerald-400/10 px-3 py-1.5 text-xs font-medium text-emerald-300">Explore</Link>
-          </nav>
-        </header>
+        <AppHeader activeView="explore" />
 
         <section className="grid gap-6 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
@@ -314,6 +297,6 @@ export default function ExplorePage() {
           <article className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5"><ExternalLink className="size-4 text-emerald-400" aria-hidden /><h2 className="mt-3 text-sm font-medium text-zinc-200">Portfolio stays focused</h2><p className="mt-1 text-xs leading-5 text-zinc-500"><Link href="/" className="text-emerald-400 hover:text-emerald-300">Return to Watchlists</Link> when you are ready to manage holdings.</p></article>
         </section>
       </div>
-    </main>
+    </motion.main>
   );
 }

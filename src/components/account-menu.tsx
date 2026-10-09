@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRef } from "react";
 import Image from "next/image";
+import { Bell, ChevronDown, CircleUserRound, LogOut, Settings } from "lucide-react";
 import type { AuthChangeEvent, AuthError, Session, User } from "@supabase/supabase-js";
 import { EditProfileModal } from "@/components/EditProfileModal";
 import { createSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
@@ -14,10 +16,35 @@ export function AccountMenu() {
   const [isReady, setIsReady] = useState(() => !isSupabaseConfigured());
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [email, setEmail] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isMenuOpen) return;
+    function closeMenu(event: PointerEvent) {
+      if (!menuRef.current?.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+        setShowNotifications(false);
+      }
+    }
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsMenuOpen(false);
+        setShowNotifications(false);
+      }
+    }
+    document.addEventListener("pointerdown", closeMenu);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeMenu);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [isMenuOpen]);
 
   useEffect(() => {
     if (!isSupabaseConfigured()) return;
@@ -84,18 +111,36 @@ export function AccountMenu() {
 
   return (
     <>
-      {!isReady ? <span className="text-xs text-zinc-500">Loading account…</span> : user ? (
-        <div className="flex items-center gap-2">
-          <button type="button" onClick={() => setIsProfileOpen(true)} className="inline-flex items-center gap-2 rounded-md border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-200 hover:bg-zinc-800">
-            {profile?.avatar_url ? <Image src={profile.avatar_url} alt="" width={20} height={20} unoptimized className="size-5 rounded-full object-cover" /> : null}
-            {profile?.username || user.email || "Complete profile"}
+      <div ref={menuRef} className="relative">
+        {!isReady ? <span className="text-xs text-zinc-500">Loading account…</span> : (
+          <button type="button" aria-expanded={isMenuOpen} aria-haspopup="menu" onClick={() => { setIsMenuOpen((open) => !open); setShowNotifications(false); }} className="inline-flex min-h-10 items-center gap-2.5 rounded-full border border-zinc-800 bg-zinc-900/70 py-1 pl-1 pr-3 text-left transition hover:border-zinc-700 hover:bg-zinc-800">
+            {user && profile?.avatar_url ? <Image src={profile.avatar_url} alt="" width={32} height={32} unoptimized className="size-8 rounded-full object-cover" /> : <span className="flex size-8 items-center justify-center rounded-full bg-zinc-800 text-zinc-300"><CircleUserRound className="size-4" aria-hidden /></span>}
+            <span className="leading-tight"><span className="block text-[10px] uppercase tracking-wider text-zinc-500">My Account</span><span className="block max-w-32 truncate text-xs font-medium text-zinc-100">{user ? profile?.username || user.email || "Complete profile" : "Sign in"}</span></span>
+            <ChevronDown className={`size-3.5 text-zinc-500 transition-transform ${isMenuOpen ? "rotate-180" : ""}`} aria-hidden />
           </button>
-          <button type="button" onClick={() => void signOut()} className="text-xs text-zinc-400 hover:text-zinc-100">Sign out</button>
-          {isProfileOpen ? <EditProfileModal userId={user.id} initialUsername={profile?.username ?? ""} initialAvatarUrl={profile?.avatar_url ?? null} onClose={() => setIsProfileOpen(false)} onSaved={(username, avatarUrl) => setProfile({ username, avatar_url: avatarUrl })} /> : null}
-        </div>
-      ) : (
-        <button type="button" onClick={() => { setError(null); setNotice(null); setIsLoginOpen(true); }} className="rounded-md border border-emerald-400/60 px-3 py-1.5 text-xs font-medium text-emerald-300 hover:bg-emerald-400/10">Sign in / Sign up</button>
-      )}
+        )}
+        {isMenuOpen ? (
+          <div role="menu" className="absolute right-0 top-full z-40 mt-2 w-60 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 p-1.5 shadow-2xl shadow-black/40">
+            {showNotifications ? (
+              <div className="p-3">
+                <div className="flex items-center gap-2 text-sm font-medium text-zinc-100"><Bell className="size-4 text-emerald-400" aria-hidden />Notifications &amp; Alerts</div>
+                <p className="mt-3 rounded-md border border-zinc-800 bg-zinc-950/70 px-3 py-4 text-center text-xs text-zinc-500">No new notifications.</p>
+                <button type="button" onClick={() => setShowNotifications(false)} className="mt-3 w-full rounded-md px-3 py-2 text-xs text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100">Back to account</button>
+              </div>
+            ) : user ? (
+              <>
+                <div className="border-b border-zinc-800 px-3 py-2"><p className="text-xs font-medium text-zinc-100">{profile?.username || "My Account"}</p><p className="mt-0.5 truncate text-[11px] text-zinc-500">{user.email}</p></div>
+                <button role="menuitem" type="button" onClick={() => setShowNotifications(true)} className="flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-xs text-zinc-300 transition hover:bg-zinc-800 hover:text-zinc-50"><Bell className="size-4 text-zinc-500" aria-hidden />Notifications &amp; Alerts</button>
+                <button role="menuitem" type="button" onClick={() => { setIsMenuOpen(false); setIsProfileOpen(true); }} className="flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-xs text-zinc-300 transition hover:bg-zinc-800 hover:text-zinc-50"><Settings className="size-4 text-zinc-500" aria-hidden />Edit Profile</button>
+                <button role="menuitem" type="button" onClick={() => { setIsMenuOpen(false); void signOut(); }} className="flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-xs text-red-400 transition hover:bg-red-500/10"><LogOut className="size-4" aria-hidden />Log Out</button>
+              </>
+            ) : (
+              <button type="button" onClick={() => { setIsMenuOpen(false); setError(null); setNotice(null); setIsLoginOpen(true); }} className="flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-xs text-zinc-200 transition hover:bg-zinc-800"><CircleUserRound className="size-4 text-zinc-500" aria-hidden />Sign in / Sign up</button>
+            )}
+          </div>
+        ) : null}
+      </div>
+      {user && isProfileOpen ? <EditProfileModal userId={user.id} initialUsername={profile?.username ?? ""} initialAvatarUrl={profile?.avatar_url ?? null} onClose={() => setIsProfileOpen(false)} onSaved={(username, avatarUrl) => setProfile({ username, avatar_url: avatarUrl })} /> : null}
       {isLoginOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" role="presentation">
           <section aria-labelledby="account-login-title" aria-modal="true" className="w-full max-w-sm rounded-lg border border-zinc-700 bg-zinc-900 p-6 shadow-2xl" role="dialog">

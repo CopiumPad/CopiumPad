@@ -49,7 +49,7 @@ export function usePortfolioStorage() {
       error: authError,
     }: { data: { user: User | null }; error: AuthError | null }) => {
       if (!active) return;
-      if (authError) setError(authError.message);
+      if (authError && authError.message !== "Auth session missing!") setError(authError.message);
       else setError(null);
       currentUserId.current = data.user?.id ?? null;
       setPositions([]);
