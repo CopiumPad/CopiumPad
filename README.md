@@ -15,3 +15,6 @@
 2. Run `supabase/schema.sql` in the Supabase SQL Editor to create the profile and position tables, RLS policies, and the public `avatars` bucket.
 3. In Supabase Authentication, enable email OTP/magic links and add `http://localhost:3000/auth/confirm`, `http://localhost:3001/auth/confirm`, plus your deployed `/auth/confirm` URL to the allowed redirect URLs.
 4. Start the app with `pnpm dev`. Signing in imports any existing `copiumpad_positions` browser data once for the first account, then positions are stored in that account's Supabase rows.
+5. Run `supabase/alerts.sql` in the Supabase SQL Editor to create the owner-scoped alerts table. Configure `RESEND_EMAIL_API_KEY` and `RESEND_FROM_EMAIL` in `.env.local`; the sender domain must be verified in Resend.
+
+Alert creation stores pending records only. The email endpoint accepts an alert ID only after a trusted trigger process marks that alert as triggered; it sends to the authenticated account email and uses the custom message as the email body.
