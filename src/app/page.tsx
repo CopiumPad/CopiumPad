@@ -1,13 +1,10 @@
 "use client";
 
 import {
-  Activity,
   ArrowDownRight,
   ArrowUpRight,
   ChartLine,
-  Pill,
   Pencil,
-  Play,
   RefreshCw,
   Search,
   TrendingUp,
@@ -16,6 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   formatPercent,
   formatSignedUsd,
@@ -33,7 +31,7 @@ import { PositionDialog } from "@/components/position-dialog";
 import { PortfolioVisualization } from "@/components/portfolio-visualization";
 import { usePortfolioStorage } from "@/hooks/usePortfolioStorage";
 import { usePortfolioActions } from "@/hooks/usePortfolioActions";
-import { AccountMenu } from "@/components/account-menu";
+import { AppHeader } from "@/components/app-header";
 
 type QuoteDto = {
   symbol: string;
@@ -173,6 +171,18 @@ export default function Home() {
   const [isPositionDialogOpen, setIsPositionDialogOpen] = useState(false);
   const [activeView, setActiveView] = useState<"table" | "visualization">("table");
   const [positionDialogInitial, setPositionDialogInitial] = useState<Partial<Holding>>({});
+
+  useEffect(() => {
+    const requestedView = new URLSearchParams(window.location.search).get("view");
+    if (requestedView === "table" || requestedView === "visualization") {
+      const timer = window.setTimeout(() => {
+        setActiveView(requestedView);
+        window.history.replaceState(null, "", "/");
+      }, 0);
+      return () => window.clearTimeout(timer);
+    }
+  }, []);
+
   const quoteSymbols = useMemo(
     () => [...new Set(holdings.map((holding) => holding.symbol.toUpperCase()))].join(","),
     [holdings],
@@ -389,58 +399,9 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-full bg-zinc-950 font-sans text-zinc-100">
+    <motion.main initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.24, ease: "easeOut" }} className="min-h-full bg-zinc-950 font-sans text-zinc-100">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-8">
-        <header className="flex flex-col gap-4 border-b border-zinc-800 pb-6 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex size-9 items-center justify-center rounded-md border border-zinc-800 bg-zinc-900">
-              <Pill className="size-4 text-emerald-400" aria-hidden />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-semibold tracking-tight text-zinc-50">
-                  CopiumPad
-                </h1>
-                <Activity className="size-4 text-zinc-500" aria-hidden />
-              </div>
-              <p className="mt-1 max-w-xl text-sm leading-6 text-zinc-400">
-                Institutional-grade copium for retail traders. Kill your broken
-                Google Sheets.
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <AccountMenu />
-            <div className="inline-flex rounded-lg border border-zinc-800 bg-zinc-950 p-1" aria-label="Dashboard view">
-              <button type="button" aria-pressed={activeView === "table"} onClick={() => setActiveView("table")} className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${activeView === "table" ? "bg-emerald-400 text-zinc-950" : "text-zinc-400 hover:text-zinc-100"}`}>Table View</button>
-              <button type="button" aria-pressed={activeView === "visualization"} onClick={() => setActiveView("visualization")} className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${activeView === "visualization" ? "bg-emerald-400 text-zinc-950" : "text-zinc-400 hover:text-zinc-100"}`}>Visualization View</button>
-            </div>
-            <Link
-              href="/explore"
-              className="rounded-full border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-300 transition hover:border-zinc-700 hover:bg-zinc-800"
-            >
-              Explore
-            </Link>
-            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-300">
-              <span className="size-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-              Market: Open
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                void loadQuotes();
-              }}
-              disabled={isRefreshing}
-              className="inline-flex items-center gap-2 rounded-full border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-200 transition hover:border-zinc-700 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              <RefreshCw
-                className={`size-3.5 ${isRefreshing ? "animate-spin" : ""}`}
-                aria-hidden
-              />
-              Refresh Quotes
-            </button>
-          </div>
-        </header>
+        <AppHeader activeView={activeView} onViewChange={setActiveView} />
 
         {errorMessage !== null ? (
           <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
@@ -540,7 +501,8 @@ export default function Home() {
           </article>
         </section>
 
-        {activeView === "table" ? <section className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/40">
+        <AnimatePresence mode="wait" initial={false}>
+        {activeView === "table" ? <motion.section key="table" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2, ease: "easeOut" }} className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/40">
           <div className="flex items-start justify-between gap-4 border-b border-zinc-800 px-5 py-4">
             <div>
               <h2 className="text-sm font-medium tracking-wide text-zinc-200">
@@ -728,37 +690,22 @@ export default function Home() {
               ))}
             </table>
           </div>
-        </section> : (
-          <PortfolioVisualization
-            positions={positions}
-            quotes={quotes}
-            actions={areActionsHydrated ? actions : []}
-            displayCurrency={displayCurrency}
-            displayCurrencyUsdRate={displayCurrencyUsdRate}
-            isRefreshing={isRefreshing}
-            isActionsHydrated={areActionsHydrated}
-            onAddActions={addActions}
-            onRemoveAction={removeAction}
-          />
+        </motion.section> : (
+          <motion.div key="visualization" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.2, ease: "easeOut" }}>
+            <PortfolioVisualization
+              positions={positions}
+              quotes={quotes}
+              actions={areActionsHydrated ? actions : []}
+              displayCurrency={displayCurrency}
+              displayCurrencyUsdRate={displayCurrencyUsdRate}
+              isRefreshing={isRefreshing}
+              isActionsHydrated={areActionsHydrated}
+              onAddActions={addActions}
+              onRemoveAction={removeAction}
+            />
+          </motion.div>
         )}
-
-        <section className="flex flex-col gap-5 rounded-xl border border-zinc-800 bg-gradient-to-br from-zinc-900 via-zinc-950 to-emerald-950/30 p-6 sm:flex-row sm:items-center sm:justify-between">
-          <div className="max-w-xl">
-            <h2 className="text-lg font-semibold tracking-tight text-zinc-50">
-              DCA &amp; Scenario Simulator
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-zinc-400">
-              Simulate dollar-cost averaging and other scenarios to see how your portfolio would perform under different market conditions.
-            </p>
-          </div>
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 rounded-lg bg-emerald-400 px-4 py-2 text-sm font-medium text-zinc-950 transition hover:bg-emerald-500"
-          >
-            <Play className="size-4" aria-hidden />
-            Launch Simulator
-          </button>
-        </section>
+        </AnimatePresence>
       </div>
       <PositionDialog
         open={isPositionDialogOpen}
@@ -766,6 +713,6 @@ export default function Home() {
         onOpenChange={setIsPositionDialogOpen}
         onSubmit={savePosition}
       />
-    </div>
+    </motion.main>
   );
 }
