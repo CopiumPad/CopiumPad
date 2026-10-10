@@ -1,7 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 
-export async function createSupabaseServerClient() {
+export async function createSupabaseServerClient(response?: NextResponse) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anonKey) {
@@ -16,9 +17,13 @@ export async function createSupabaseServerClient() {
       },
       setAll(cookiesToSet) {
         try {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options),
-          );
+          cookiesToSet.forEach(({ name, value, options }) => {
+            if (response) {
+              response.cookies.set(name, value, options);
+            } else {
+              cookieStore.set(name, value, options);
+            }
+          });
         } catch {
           // Server Components cannot write cookies; middleware or route handlers can.
         }
