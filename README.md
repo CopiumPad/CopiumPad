@@ -1,6 +1,6 @@
 # CopiumPad 💊
 
-> View the deployment (https://copium-pad.vercel.app/)
+> View the deployment (https://copium-pad.vercel.app/).  
 > Institutional-grade copium for retail traders.  
 > Kill your broken Google Sheets with real-time portfolio tracking and scenario simulation.
 
