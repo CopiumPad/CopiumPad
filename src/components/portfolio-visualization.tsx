@@ -172,7 +172,7 @@ export function PortfolioVisualization({
 
   return (
     <div className="space-y-5">
-      <section className="border border-zinc-800 bg-zinc-900/40">
+      <section className="rounded-xl border border-zinc-800 bg-zinc-900/40">
         <div className="flex flex-col gap-3 border-b border-zinc-800 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-sm font-medium text-zinc-100">Asset allocation</h2>
@@ -239,7 +239,7 @@ export function PortfolioVisualization({
         </div>
       </section>
 
-      <section className="border border-zinc-800 bg-zinc-900/40">
+      <section className="rounded-xl border border-zinc-800 bg-zinc-900/40">
         <div className="flex flex-col gap-3 border-b border-zinc-800 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-sm font-medium text-zinc-100">Portfolio tracking</h2>
@@ -269,7 +269,7 @@ export function PortfolioVisualization({
         </div>
       </section>
 
-      <details className="group border border-zinc-800 bg-zinc-900/40">
+      <details className="group rounded-xl border border-zinc-800 bg-zinc-900/40">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4">
           <span>
             <span className="block text-sm font-medium text-zinc-100">Action history</span>
