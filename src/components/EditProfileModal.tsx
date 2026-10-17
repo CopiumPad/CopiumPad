@@ -12,7 +12,7 @@ type EditProfileModalProps = {
   onSaved: (username: string, avatarUrl: string | null) => void;
 };
 
-const MAX_AVATAR_SIZE = 2 * 1024 * 1024;
+const MAX_AVATAR_SIZE = 1024 * 1024;
 const AVATAR_TYPES: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
@@ -51,7 +51,7 @@ export function EditProfileModal({
     if (file.size > MAX_AVATAR_SIZE) {
       setAvatarFile(null);
       setAvatarUrl(initialAvatarUrl);
-      setError("Avatar images must be 2 MB or smaller.");
+      setError("Avatar images must be 1 MB or smaller.");
       return;
     }
     setAvatarFile(file);
