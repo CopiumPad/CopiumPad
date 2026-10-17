@@ -24,6 +24,8 @@ type PortfolioVisualizationProps = {
   displayCurrencyUsdRate: number | null;
   isRefreshing: boolean;
   isActionsHydrated: boolean;
+  isAuthenticated: boolean;
+  onRequestSignIn: () => void;
   onAddActions: (actions: PortfolioAction[]) => void;
   onRemoveAction: (id: string) => void;
 };
@@ -53,6 +55,8 @@ export function PortfolioVisualization({
   displayCurrencyUsdRate,
   isRefreshing,
   isActionsHydrated,
+  isAuthenticated,
+  onRequestSignIn,
   onAddActions,
   onRemoveAction,
 }: PortfolioVisualizationProps) {
@@ -60,6 +64,7 @@ export function PortfolioVisualization({
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [isActionDialogOpen, setIsActionDialogOpen] = useState(false);
   const [priceHistory, setPriceHistory] = useState<PortfolioPriceHistory[]>([]);
+
   const historySymbols = useMemo(
     () => [...new Set(positions.map((position) => position.symbol.toUpperCase()))].sort(),
     [positions],
@@ -82,6 +87,10 @@ export function PortfolioVisualization({
   }, [allocations, totalValue]);
 
   function setInitialPoint() {
+    if (!isAuthenticated) {
+      onRequestSignIn();
+      return;
+    }
     if (positions.length === 0 || positions.some((position) => position.livePrice === null)) return;
     const confirmed = window.confirm("Setting an initial baseline will mark a break in historical continuous tracking. Existing prior transactions will be retained, but continuity will show a chart discontinuity.");
     if (!confirmed) return;
@@ -102,8 +111,20 @@ export function PortfolioVisualization({
   }
 
   function confirmRemove(action: PortfolioAction) {
+    if (!isAuthenticated) {
+      onRequestSignIn();
+      return;
+    }
     if (!window.confirm("Are you sure you want to remove this transaction? This will recalculate historical portfolio holdings and line chart values.")) return;
     onRemoveAction(action.id);
+  }
+
+  function openActionDialog() {
+    if (!isAuthenticated) {
+      onRequestSignIn();
+      return;
+    }
+    setIsActionDialogOpen(true);
   }
 
   const quoteNames = new Map(quotes.map((quote) => [quote.symbol.toUpperCase(), quote.name]));
@@ -225,8 +246,8 @@ export function PortfolioVisualization({
             <p className="mt-1 text-xs text-zinc-500">{isRefreshing ? "Updating live marks…" : "Latest value is based on current market quotes."}</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={() => setIsActionDialogOpen(true)} disabled={!isActionsHydrated || positions.length === 0} className="inline-flex items-center gap-2 rounded-md border border-zinc-700 px-3 py-2 text-xs font-medium text-zinc-200 hover:bg-zinc-800 disabled:opacity-50"><Plus className="size-3.5" aria-hidden />Add an action</button>
-            <button type="button" onClick={setInitialPoint} disabled={!isActionsHydrated || positions.length === 0 || positions.some((position) => position.livePrice === null)} className="rounded-md bg-emerald-400 px-3 py-2 text-xs font-medium text-zinc-950 hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50">Set initial point</button>
+            <button type="button" onClick={openActionDialog} disabled={!isActionsHydrated || positions.length === 0} className="inline-flex items-center gap-2 rounded-md border border-zinc-700 px-3 py-2 text-xs font-medium text-zinc-200 hover:bg-zinc-800 disabled:opacity-50"><Plus className="size-3.5" aria-hidden />Add an action</button>
+            <button type="button" onClick={setInitialPoint} disabled={isAuthenticated && (!isActionsHydrated || positions.length === 0 || positions.some((position) => position.livePrice === null))} className="rounded-md bg-emerald-400 px-3 py-2 text-xs font-medium text-zinc-950 hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50">Set initial point</button>
           </div>
         </div>
         <div className="grid gap-5 px-5 py-6 md:grid-cols-[minmax(0,1fr)_220px]">
@@ -280,12 +301,18 @@ export function PortfolioVisualization({
       </details>
 
       <PortfolioActionDialog
-        open={isActionDialogOpen}
+        open={isAuthenticated && isActionDialogOpen}
         positions={positions}
         quotes={quotes}
         actions={actions}
         onClose={() => setIsActionDialogOpen(false)}
-        onSubmit={(action) => onAddActions([action])}
+        onSubmit={(action) => {
+          if (!isAuthenticated) {
+            onRequestSignIn();
+            return;
+          }
+          onAddActions([action]);
+        }}
       />
     </div>
   );

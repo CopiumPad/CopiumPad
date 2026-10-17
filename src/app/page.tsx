@@ -29,9 +29,11 @@ import {
 } from "@/lib/finance/portfolio";
 import { PositionDialog } from "@/components/position-dialog";
 import { PortfolioVisualization } from "@/components/portfolio-visualization";
+import { ExploreView } from "@/components/explore-view";
 import { usePortfolioStorage } from "@/hooks/usePortfolioStorage";
 import { usePortfolioActions } from "@/hooks/usePortfolioActions";
-import { AppHeader } from "@/components/app-header";
+import { AppHeader, type AppView } from "@/components/app-header";
+import { DEFAULT_ACTIONS, DEFAULT_POSITIONS } from "@/lib/constants/defaultData";
 
 type QuoteDto = {
   symbol: string;
@@ -148,7 +150,7 @@ function isValidHoldingValue(value: string): boolean {
 
 export default function Home() {
   const {
-    positions: holdings,
+    positions: storedHoldings,
     isHydrated,
     isAuthenticated,
     error: portfolioError,
@@ -156,7 +158,7 @@ export default function Home() {
     removePosition,
     updatePosition,
   } = usePortfolioStorage();
-  const { actions, isHydrated: areActionsHydrated, addActions, removeAction } = usePortfolioActions();
+  const { actions: storedActions, isHydrated: areActionsHydrated, addActions, removeAction } = usePortfolioActions();
   const [quotes, setQuotes] = useState<QuoteSnapshot[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -169,19 +171,58 @@ export default function Home() {
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [isPositionDialogOpen, setIsPositionDialogOpen] = useState(false);
-  const [activeView, setActiveView] = useState<"table" | "visualization">("table");
+  const [activeView, setActiveView] = useState<AppView>("table");
+  const [selectedExploreSymbol, setSelectedExploreSymbol] = useState<string | null>(null);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [positionDialogInitial, setPositionDialogInitial] = useState<Partial<Holding>>({});
 
   useEffect(() => {
-    const requestedView = new URLSearchParams(window.location.search).get("view");
-    if (requestedView === "table" || requestedView === "visualization") {
-      const timer = window.setTimeout(() => {
+    function syncRouteState() {
+      const params = new URLSearchParams(window.location.search);
+      const requestedView = params.get("view");
+      const symbol = params.get("symbol")?.trim().toUpperCase() ?? null;
+      if (requestedView === "table" || requestedView === "visualization" || requestedView === "explore") {
         setActiveView(requestedView);
-        window.history.replaceState(null, "", "/");
-      }, 0);
-      return () => window.clearTimeout(timer);
+      } else if (symbol) {
+        setActiveView("explore");
+      }
+      setSelectedExploreSymbol(symbol);
     }
+    syncRouteState();
+    window.addEventListener("popstate", syncRouteState);
+    return () => window.removeEventListener("popstate", syncRouteState);
   }, []);
+
+  const holdings = useMemo(
+    () => !isHydrated ? [] : isAuthenticated ? storedHoldings : DEFAULT_POSITIONS,
+    [isAuthenticated, isHydrated, storedHoldings],
+  );
+  const actions = useMemo(
+    () => isAuthenticated ? (areActionsHydrated ? storedActions : []) : (isHydrated ? [...DEFAULT_ACTIONS] : []),
+    [areActionsHydrated, isAuthenticated, isHydrated, storedActions],
+  );
+  const visibleActionsHydrated = isAuthenticated ? areActionsHydrated : isHydrated;
+
+  function changeView(view: AppView) {
+    setActiveView(view);
+    const params = new URLSearchParams(window.location.search);
+    params.set("view", view);
+    if (view !== "explore") params.delete("symbol");
+    else if (selectedExploreSymbol) params.set("symbol", selectedExploreSymbol);
+    window.history.pushState(null, "", `/?${params.toString()}`);
+  }
+
+  function openExploreSymbol(symbol: string) {
+    const normalizedSymbol = symbol.trim().toUpperCase();
+    setSelectedExploreSymbol(normalizedSymbol);
+    setActiveView("explore");
+    const params = new URLSearchParams({ view: "explore", symbol: normalizedSymbol });
+    window.history.pushState(null, "", `/?${params.toString()}`);
+  }
+
+  function requestSignIn() {
+    setIsLoginOpen(true);
+  }
 
   const quoteSymbols = useMemo(
     () => [...new Set(holdings.map((holding) => holding.symbol.toUpperCase()))].join(","),
@@ -340,6 +381,10 @@ export default function Home() {
   }
 
   function removeHolding(symbol: string) {
+    if (!isAuthenticated) {
+      requestSignIn();
+      return;
+    }
     removePosition(symbol);
   }
 
@@ -373,6 +418,10 @@ export default function Home() {
   }
 
   function selectSearchResult(result: SearchResult) {
+    if (!isAuthenticated) {
+      requestSignIn();
+      return;
+    }
     setPositionDialogInitial({ symbol: result.symbol, name: result.name });
     setIsPositionDialogOpen(true);
     setSearchQuery("");
@@ -381,16 +430,28 @@ export default function Home() {
   }
 
   function openNewPositionDialog() {
+    if (!isAuthenticated) {
+      requestSignIn();
+      return;
+    }
     setPositionDialogInitial({});
     setIsPositionDialogOpen(true);
   }
 
   function openEditPositionDialog(holding: Holding) {
+    if (!isAuthenticated) {
+      requestSignIn();
+      return;
+    }
     setPositionDialogInitial(holding);
     setIsPositionDialogOpen(true);
   }
 
   function savePosition(position: Holding) {
+    if (!isAuthenticated) {
+      requestSignIn();
+      return;
+    }
     if (holdings.some((holding) => holding.symbol === position.symbol)) {
       updatePosition(position);
     } else {
@@ -401,7 +462,12 @@ export default function Home() {
   return (
     <motion.main initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.24, ease: "easeOut" }} className="min-h-full bg-zinc-950 font-sans text-zinc-100">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-8">
-        <AppHeader activeView={activeView} onViewChange={setActiveView} />
+        <AppHeader
+          activeView={activeView}
+          onViewChange={changeView}
+          isLoginOpen={isLoginOpen}
+          onLoginOpenChange={setIsLoginOpen}
+        />
 
         {errorMessage !== null ? (
           <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
@@ -409,7 +475,7 @@ export default function Home() {
           </p>
         ) : null}
         {portfolioError ? <p role="alert" className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">{portfolioError}</p> : null}
-        {!isAuthenticated && isHydrated ? <p className="rounded-lg border border-zinc-800 bg-zinc-900/60 px-4 py-3 text-sm text-zinc-300">Sign in to load and save your cloud portfolio.</p> : null}
+        {!isAuthenticated && isHydrated ? <p className="rounded-lg border border-zinc-800 bg-zinc-900/60 px-4 py-3 text-sm text-zinc-300">Currently displaying default data, sign in to edit</p> : null}
 
         <section className="grid gap-4 md:grid-cols-3">
           <article className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5">
@@ -516,9 +582,8 @@ export default function Home() {
               <button
                 type="button"
                 onClick={openNewPositionDialog}
-                disabled={!isAuthenticated}
                 title={isAuthenticated ? "Add holding" : "Sign in to add holdings"}
-                className="rounded-lg bg-emerald-400 px-3 py-2 text-xs font-medium text-zinc-950 transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-lg bg-emerald-400 px-3 py-2 text-xs font-medium text-zinc-950 transition hover:bg-emerald-500"
               >
                 Add holding
               </button>
@@ -610,7 +675,16 @@ export default function Home() {
                   {cluster.positions.map((position) => (
                     <tr key={position.symbol} className="hover:bg-zinc-900/80">
                     <td className="px-5 py-4">
-                      <Link href={`/explore?symbol=${encodeURIComponent(position.symbol)}`} className="group text-left" aria-label={`View details for ${position.symbol}`}>
+                      <Link
+                        href={`/?view=explore&symbol=${encodeURIComponent(position.symbol)}`}
+                        onClick={(event) => {
+                          if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+                          event.preventDefault();
+                          openExploreSymbol(position.symbol);
+                        }}
+                        className="group text-left"
+                        aria-label={`View details for ${position.symbol}`}
+                      >
                         <span className="flex items-center gap-1.5 font-sans font-medium text-zinc-100">
                           <span
                             className="text-base leading-none"
@@ -636,8 +710,14 @@ export default function Home() {
                         aria-label={`${position.symbol} average cost`}
                         type="text"
                         inputMode="decimal"
+                        readOnly={!isAuthenticated}
+                        onClick={() => { if (!isAuthenticated) requestSignIn(); }}
                         value={holdings.find((holding) => holding.symbol === position.symbol)?.averageCost ?? ""}
                         onChange={(event) => {
+                          if (!isAuthenticated) {
+                            requestSignIn();
+                            return;
+                          }
                           const averageCost = event.target.value;
                           const holding = holdings.find((item) => item.symbol === position.symbol);
                           if (holding) updatePosition({ ...holding, averageCost });
@@ -654,8 +734,14 @@ export default function Home() {
                         aria-label={`${position.symbol} quantity`}
                         type="text"
                         inputMode="decimal"
+                        readOnly={!isAuthenticated}
+                        onClick={() => { if (!isAuthenticated) requestSignIn(); }}
                         value={holdings.find((holding) => holding.symbol === position.symbol)?.quantity ?? ""}
                         onChange={(event) => {
+                          if (!isAuthenticated) {
+                            requestSignIn();
+                            return;
+                          }
                           const quantity = event.target.value;
                           const holding = holdings.find((item) => item.symbol === position.symbol);
                           if (holding) updatePosition({ ...holding, quantity });
@@ -690,25 +776,34 @@ export default function Home() {
               ))}
             </table>
           </div>
-        </motion.section> : (
+        </motion.section> : activeView === "visualization" ? (
           <motion.div key="visualization" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.2, ease: "easeOut" }}>
             <PortfolioVisualization
               positions={positions}
               quotes={quotes}
-              actions={areActionsHydrated ? actions : []}
+              actions={actions}
               displayCurrency={displayCurrency}
               displayCurrencyUsdRate={displayCurrencyUsdRate}
               isRefreshing={isRefreshing}
-              isActionsHydrated={areActionsHydrated}
+              isActionsHydrated={visibleActionsHydrated}
+              isAuthenticated={isAuthenticated}
+              onRequestSignIn={requestSignIn}
               onAddActions={addActions}
               onRemoveAction={removeAction}
+            />
+          </motion.div>
+        ) : (
+          <motion.div key="explore" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.2, ease: "easeOut" }}>
+            <ExploreView
+              routeSymbol={selectedExploreSymbol}
+              onReturnToWatchlist={() => changeView("table")}
             />
           </motion.div>
         )}
         </AnimatePresence>
       </div>
       <PositionDialog
-        open={isPositionDialogOpen}
+        open={isAuthenticated && isPositionDialogOpen}
         initialPosition={positionDialogInitial}
         onOpenChange={setIsPositionDialogOpen}
         onSubmit={savePosition}

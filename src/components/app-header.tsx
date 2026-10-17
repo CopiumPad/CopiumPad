@@ -10,7 +10,9 @@ export type AppView = "table" | "visualization" | "explore";
 
 type AppHeaderProps = {
   activeView: AppView;
-  onViewChange?: (view: Exclude<AppView, "explore">) => void;
+  onViewChange?: (view: AppView) => void;
+  isLoginOpen: boolean;
+  onLoginOpenChange: (open: boolean) => void;
 };
 
 const VIEWS: { id: AppView; label: string }[] = [
@@ -19,7 +21,7 @@ const VIEWS: { id: AppView; label: string }[] = [
   { id: "explore", label: "Explore" },
 ];
 
-export function AppHeader({ activeView, onViewChange }: AppHeaderProps) {
+export function AppHeader({ activeView, onViewChange, isLoginOpen, onLoginOpenChange }: AppHeaderProps) {
   const router = useRouter();
 
   return (
@@ -37,7 +39,6 @@ export function AppHeader({ activeView, onViewChange }: AppHeaderProps) {
           {VIEWS.map((view) => {
             const isActive = activeView === view.id;
             function selectView() {
-              if (view.id === "explore") return;
               if (onViewChange) {
                 onViewChange(view.id);
                 return;
@@ -52,18 +53,14 @@ export function AppHeader({ activeView, onViewChange }: AppHeaderProps) {
               </>
             );
 
-            return view.id === "explore" ? (
-              <Link key={view.id} href="/explore" aria-current={isActive ? "page" : undefined} className={className}>
-                {label}
-              </Link>
-            ) : (
+            return (
               <button key={view.id} type="button" aria-pressed={isActive} onClick={selectView} className={className}>
                 {label}
               </button>
             );
           })}
         </nav>
-        <AccountMenu />
+        <AccountMenu isLoginOpen={isLoginOpen} onLoginOpenChange={onLoginOpenChange} />
       </div>
     </header>
   );

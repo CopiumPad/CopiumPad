@@ -11,11 +11,15 @@ import { createSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabas
 
 type Profile = { username: string; avatar_url: string | null };
 
-export function AccountMenu() {
+type AccountMenuProps = {
+  isLoginOpen: boolean;
+  onLoginOpenChange: (open: boolean) => void;
+};
+
+export function AccountMenu({ isLoginOpen, onLoginOpenChange }: AccountMenuProps) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isReady, setIsReady] = useState(() => !isSupabaseConfigured());
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -128,7 +132,7 @@ export function AccountMenu() {
                 <button role="menuitem" type="button" onClick={() => { setIsMenuOpen(false); void signOut(); }} className="flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-xs text-red-400 transition hover:bg-red-500/10"><LogOut className="size-4" aria-hidden />Log Out</button>
               </>
             ) : (
-              <button type="button" onClick={() => { setIsMenuOpen(false); setError(null); setNotice(null); setIsLoginOpen(true); }} className="flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-xs text-zinc-200 transition hover:bg-zinc-800"><CircleUserRound className="size-4 text-zinc-500" aria-hidden />Sign in / Sign up</button>
+              <button type="button" onClick={() => { setIsMenuOpen(false); setError(null); setNotice(null); onLoginOpenChange(true); }} className="flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-xs text-zinc-200 transition hover:bg-zinc-800"><CircleUserRound className="size-4 text-zinc-500" aria-hidden />Sign in / Sign up</button>
             )}
           </div>
         ) : null}
@@ -140,7 +144,7 @@ export function AccountMenu() {
           <section aria-labelledby="account-login-title" aria-modal="true" className="w-full max-w-sm rounded-lg border border-zinc-700 bg-zinc-900 p-6 shadow-2xl" role="dialog">
             <div className="flex items-start justify-between gap-4">
               <div><h2 id="account-login-title" className="text-lg font-semibold text-zinc-100">Sign in or create account</h2><p className="mt-1 text-sm text-zinc-400">We&apos;ll email you a secure one-time link.</p></div>
-              <button type="button" onClick={() => setIsLoginOpen(false)} aria-label="Close sign-in dialog" className="text-xl leading-none text-zinc-500 hover:text-zinc-200">×</button>
+              <button type="button" onClick={() => onLoginOpenChange(false)} aria-label="Close sign-in dialog" className="text-xl leading-none text-zinc-500 hover:text-zinc-200">×</button>
             </div>
             <form onSubmit={sendMagicLink} className="mt-5 space-y-4">
               <label className="block text-sm text-zinc-300">Email
