@@ -1,8 +1,8 @@
 import type { Holding, PortfolioAction } from "@/lib/finance/portfolio";
 
 export const DEFAULT_POSITIONS: readonly Holding[] = [
-  { symbol: "VOO", name: "Vanguard S&P 500 ETF", quantity: "12", averageCost: "433.3333333333" },
-  { symbol: "BTC-USD", name: "Bitcoin USD", quantity: "0.35", averageCost: "63714.2857142857" },
+  { symbol: "VOO", name: "Vanguard S&P 500 ETF", quantity: "12", averageCost: "433.33" },
+  { symbol: "BTC-USD", name: "Bitcoin USD", quantity: "0.35", averageCost: "63714.29" },
   { symbol: "QQQ", name: "Invesco QQQ Trust", quantity: "5", averageCost: "390" },
 ];
 
