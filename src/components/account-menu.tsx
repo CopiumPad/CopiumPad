@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import { useRef } from "react";
 import Image from "next/image";
 import { Bell, ChevronDown, CircleUserRound, LogOut, Settings } from "lucide-react";
-import type { AuthChangeEvent, AuthError, Session, User } from "@supabase/supabase-js";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { EditProfileModal } from "@/components/EditProfileModal";
 import { NotificationModal } from "@/components/NotificationModal";
+import { AccountPillSkeleton } from "@/components/skeletons";
+import { useAuthUser } from "@/hooks/useAuthUser";
+import { queryKeys } from "@/lib/queries/keys";
+import { profileQueryOptions, type Profile } from "@/lib/queries/profile";
 import { createSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
-
-type Profile = { username: string; avatar_url: string | null };
 
 type AccountMenuProps = {
   isLoginOpen: boolean;
@@ -17,9 +19,13 @@ type AccountMenuProps = {
 };
 
 export function AccountMenu({ isLoginOpen, onLoginOpenChange }: AccountMenuProps) {
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [isReady, setIsReady] = useState(() => !isSupabaseConfigured());
+  const queryClient = useQueryClient();
+  const { user, isReady } = useAuthUser();
+  const userId = user?.id ?? null;
+  const { data: profile = null } = useQuery({
+    ...profileQueryOptions(createSupabaseBrowserClient, userId ?? ""),
+    enabled: userId !== null,
+  });
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -48,41 +54,6 @@ export function AccountMenu({ isLoginOpen, onLoginOpenChange }: AccountMenuProps
       document.removeEventListener("keydown", closeOnEscape);
     };
   }, [isMenuOpen]);
-
-  useEffect(() => {
-    if (!isSupabaseConfigured()) return;
-    const supabase = createSupabaseBrowserClient();
-    let active = true;
-    void supabase.auth.getUser().then(({ data }: { data: { user: User | null }; error: AuthError | null }) => {
-      if (active) {
-        setUser(data.user);
-        setIsReady(true);
-      }
-    }).catch(() => {
-      if (active) setIsReady(true);
-    });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((
-      _event: AuthChangeEvent,
-      session: Session | null,
-    ) => {
-      setUser(session?.user ?? null);
-      if (!session?.user) setProfile(null);
-    });
-    return () => {
-      active = false;
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!user) return;
-    let active = true;
-    void createSupabaseBrowserClient().from("profiles").select("username, avatar_url").eq("id", user.id).maybeSingle()
-      .then(({ data }: { data: Profile | null }) => {
-        if (active && data) setProfile(data);
-      });
-    return () => { active = false; };
-  }, [user]);
 
   async function sendMagicLink(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -115,7 +86,7 @@ export function AccountMenu({ isLoginOpen, onLoginOpenChange }: AccountMenuProps
   return (
     <>
       <div ref={menuRef} className="relative">
-        {!isReady ? <span className="text-xs text-zinc-500">Loading account…</span> : (
+        {!isReady ? <AccountPillSkeleton /> : (
           <button type="button" aria-expanded={isMenuOpen} aria-haspopup="menu" onClick={() => setIsMenuOpen((open) => !open)} className="inline-flex min-h-10 items-center gap-2.5 rounded-full border border-zinc-800 bg-zinc-900/70 py-1 pl-1 pr-3 text-left transition hover:border-zinc-700 hover:bg-zinc-800">
             {user && profile?.avatar_url ? <Image src={profile.avatar_url} alt="" width={32} height={32} unoptimized className="size-8 rounded-full object-cover" /> : <span className="flex size-8 items-center justify-center rounded-full bg-zinc-800 text-zinc-300"><CircleUserRound className="size-4" aria-hidden /></span>}
             <span className="leading-tight"><span className="block text-[10px] uppercase tracking-wider text-zinc-500">My Account</span><span className="block max-w-32 truncate text-xs font-medium text-zinc-100">{user ? profile?.username || user.email || "Complete profile" : "Sign in"}</span></span>
@@ -137,7 +108,7 @@ export function AccountMenu({ isLoginOpen, onLoginOpenChange }: AccountMenuProps
           </div>
         ) : null}
       </div>
-      {user && isProfileOpen ? <EditProfileModal userId={user.id} initialUsername={profile?.username ?? ""} initialAvatarUrl={profile?.avatar_url ?? null} onClose={() => setIsProfileOpen(false)} onSaved={(username, avatarUrl) => setProfile({ username, avatar_url: avatarUrl })} /> : null}
+      {user && isProfileOpen ? <EditProfileModal userId={user.id} initialUsername={profile?.username ?? ""} initialAvatarUrl={profile?.avatar_url ?? null} onClose={() => setIsProfileOpen(false)} onSaved={(username, avatarUrl) => queryClient.setQueryData<Profile>(queryKeys.profile(user.id), { username, avatar_url: avatarUrl })} /> : null}
       {user && isNotificationModalOpen ? <NotificationModal userId={user.id} onClose={() => setIsNotificationModalOpen(false)} /> : null}
       {isLoginOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" role="presentation">
