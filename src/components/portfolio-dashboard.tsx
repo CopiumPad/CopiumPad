@@ -99,13 +99,10 @@ function pnlClassName(value: DecimalInput | null): string {
   }
 
   const amount = toDecimal(value);
-  if (amount.isPositive()) {
-    return "text-emerald-400";
+  if (amount.isZero()) {
+    return "text-zinc-400";
   }
-  if (amount.isNegative()) {
-    return "text-rose-400";
-  }
-  return "text-zinc-400";
+  return amount.isPositive() ? "text-emerald-400" : "text-rose-400";
 }
 
 const CURRENCY_SYMBOLS: Record<string, string> = {

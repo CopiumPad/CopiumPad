@@ -15,7 +15,6 @@ import { motion } from "framer-motion";
 import {
   formatCompactNumber,
   formatPercent,
-  formatSignedUsd,
 } from "@/lib/finance/money";
 import type { QuoteSnapshot } from "@/lib/finance/portfolio";
 import { ScrollWindow, TAP } from "@/components/ui/motion";
@@ -275,7 +274,7 @@ export function ExploreView({ routeSymbol, onReturnToWatchlist }: ExploreViewPro
               <p className="font-mono tabular-nums text-2xl text-zinc-50">{formatPrice(selectedQuote)} <span className="text-sm text-zinc-500">{selectedQuote.currency}</span></p>
               <p className={`mt-1 inline-flex items-center gap-1 font-mono text-sm tabular-nums ${Number(selectedQuote.changePercent) >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
                 {Number(selectedQuote.changePercent) >= 0 ? <ArrowUpRight className="size-4" aria-hidden /> : <ArrowDownRight className="size-4" aria-hidden />}
-                {formatSignedUsd(selectedQuote.changePercent)}%
+                {formatPercent(selectedQuote.changePercent)}
               </p>
             </div>
           </div>
