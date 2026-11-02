@@ -34,6 +34,7 @@ import { usePortfolioStorage } from "@/hooks/usePortfolioStorage";
 import { usePortfolioActions } from "@/hooks/usePortfolioActions";
 import type { AppView } from "@/components/app-header";
 import { SkeletonBlock } from "@/components/skeletons";
+import { MotionCard, ScrollWindow, TAP } from "@/components/ui/motion";
 import { DEFAULT_ACTIONS } from "@/lib/constants/defaultData";
 import { isValidHoldingValue } from "@/lib/queries/positions";
 
@@ -98,13 +99,10 @@ function pnlClassName(value: DecimalInput | null): string {
   }
 
   const amount = toDecimal(value);
-  if (amount.isPositive()) {
-    return "text-emerald-400";
+  if (amount.isZero()) {
+    return "text-zinc-400";
   }
-  if (amount.isNegative()) {
-    return "text-red-400";
-  }
-  return "text-zinc-400";
+  return amount.isPositive() ? "text-emerald-400" : "text-rose-400";
 }
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
@@ -332,6 +330,21 @@ export function PortfolioDashboard({
 
     return [...clusters.values()];
   }, [positions, quotes]);
+  const isSearchPanelOpen = searchError !== null || searchResults.length > 0 || (hasSearched && !isSearching);
+
+  // Listens on the document because the submit button disables mid-search, which drops focus to the body.
+  useEffect(() => {
+    if (!isSearchPanelOpen) return;
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      setSearchResults([]);
+      setHasSearched(false);
+      setSearchError(null);
+    }
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [isSearchPanelOpen]);
+
   function quoteFor(symbol: string): QuoteSnapshot | undefined {
     return quotes.find((quote) => quote.symbol.toUpperCase() === symbol.toUpperCase());
   }
@@ -388,6 +401,12 @@ export function PortfolioDashboard({
     }
   }
 
+  function dismissSearch() {
+    setSearchResults([]);
+    setHasSearched(false);
+    setSearchError(null);
+  }
+
   function selectSearchResult(result: SearchResult) {
     if (!isAuthenticated) {
       requestSignIn();
@@ -396,8 +415,7 @@ export function PortfolioDashboard({
     setPositionDialogInitial({ symbol: result.symbol, name: result.name });
     setIsPositionDialogOpen(true);
     setSearchQuery("");
-    setSearchResults([]);
-    setSearchError(null);
+    dismissSearch();
   }
 
   function openNewPositionDialog() {
@@ -433,41 +451,53 @@ export function PortfolioDashboard({
   return (
     <>
         {errorMessage !== null ? (
-          <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          <p className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
             {errorMessage}
           </p>
         ) : null}
-        {portfolioError ? <p role="alert" className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">{portfolioError}</p> : null}
-        {!isAuthenticated ? <p className="rounded-lg border border-zinc-800 bg-zinc-900/60 px-4 py-3 text-sm text-zinc-300">Currently displaying default data, sign in to edit</p> : null}
+        {portfolioError ? <p role="alert" className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">{portfolioError}</p> : null}
+        {!isAuthenticated ? <p className="rounded-xl border border-border bg-card px-4 py-3 text-sm text-zinc-300">Currently displaying default data, sign in to edit</p> : null}
 
         <section className="grid gap-4 md:grid-cols-3">
-          <article className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex flex-wrap items-center gap-2 text-xs font-medium uppercase tracking-wider text-zinc-500">
-                <Wallet className="size-3.5" aria-hidden />
-                Total Portfolio Value
-                <select
-                  aria-label="Portfolio display currency"
-                  value={displayCurrency}
-                  onChange={(event) => {
-                    const nextCurrency = event.target.value;
-                    setDisplayCurrency(nextCurrency);
-                    setDisplayCurrencyUsdRate(nextCurrency === "USD" ? 1 : null);
-                  }}
-                  className="rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 text-[11px] font-medium tracking-normal text-zinc-200 outline-none transition focus:border-emerald-400"
-                >
-                  {DISPLAY_CURRENCIES.map((currency) => (
-                    <option key={currency} value={currency}>
-                      {currency}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          <MotionCard className="rounded-2xl border border-border bg-card p-6">
+            <div className="flex flex-wrap items-center gap-2 text-xs font-medium uppercase tracking-wider text-zinc-500">
+              <Wallet className="size-3.5" aria-hidden />
+              Total Portfolio Value
+              <select
+                aria-label="Portfolio display currency"
+                value={displayCurrency}
+                onChange={(event) => {
+                  const nextCurrency = event.target.value;
+                  setDisplayCurrency(nextCurrency);
+                  setDisplayCurrencyUsdRate(nextCurrency === "USD" ? 1 : null);
+                }}
+                className="rounded-xl border border-input bg-background px-2 py-1 font-mono text-[11px] font-medium tabular-nums tracking-normal text-zinc-200 outline-none transition focus:border-primary"
+              >
+                {DISPLAY_CURRENCIES.map((currency) => (
+                  <option key={currency} value={currency}>
+                    {currency}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {isLoadingMarks ? <SkeletonBlock className="mt-4 h-9 w-40" /> : (
+              <p className="mt-4 font-mono tabular-nums text-3xl font-semibold tracking-tight text-zinc-50">
+                {displayedTotalValue === null
+                  ? "—"
+                  : formatAssetCurrency(displayedTotalValue, displayCurrency)}
+              </p>
+            )}
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+              <p className="font-mono text-xs tabular-nums text-zinc-500">
+                {lastUpdated === null
+                  ? "Waiting for live quotes"
+                  : `Last print ${lastUpdated}`}
+              </p>
               {hasMarks ? (
                 <span
-                  className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium ${
+                  className={`inline-flex items-center gap-1 whitespace-nowrap rounded-xl border px-2 py-1 font-mono text-xs font-medium tabular-nums ${
                     toDecimal(totals.dayPnl).isNegative()
-                      ? "border-red-500/20 bg-red-500/10 text-red-400"
+                      ? "border-rose-500/20 bg-rose-500/10 text-rose-400"
                       : "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
                   }`}
                 >
@@ -485,60 +515,48 @@ export function PortfolioDashboard({
                 </span>
               )}
             </div>
-            {isLoadingMarks ? <SkeletonBlock className="mt-4 h-9 w-40" /> : (
-              <p className="mt-4 font-mono text-3xl font-semibold tracking-tight text-zinc-50">
-                {displayedTotalValue === null
-                  ? "—"
-                  : formatAssetCurrency(displayedTotalValue, displayCurrency)}
-              </p>
-            )}
-            <p className="mt-2 text-xs text-zinc-500">
-              {lastUpdated === null
-                ? "Waiting for live quotes"
-                : `Last print ${lastUpdated}`}
-            </p>
-          </article>
+          </MotionCard>
 
-          <article className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5">
+          <MotionCard className="rounded-2xl border border-border bg-card p-6">
             <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-zinc-500">
               <ChartLine className="size-3.5" aria-hidden />
               Net Unrealized PnL
             </div>
             {isLoadingMarks ? <SkeletonBlock className="mt-4 h-9 w-40" /> : (
               <p
-                className={`mt-4 font-mono text-3xl font-semibold ${pnlClassName(hasMarks ? totals.netUnrealizedPnl : null)}`}
+                className={`mt-4 font-mono tabular-nums text-3xl font-semibold ${pnlClassName(hasMarks ? totals.netUnrealizedPnl : null)}`}
               >
                 {hasMarks ? formatSignedUsd(totals.netUnrealizedPnl) : "—"}
               </p>
             )}
-            <p className={`mt-2 text-sm ${pnlClassName(hasMarks ? totals.netUnrealizedPnlPercent : null)}`}>
+            <p className={`mt-2 font-mono text-sm tabular-nums ${pnlClassName(hasMarks ? totals.netUnrealizedPnlPercent : null)}`}>
               {hasMarks
                 ? formatPercent(totals.netUnrealizedPnlPercent)
                 : "vs. book cost"}
             </p>
-          </article>
+          </MotionCard>
 
-          <article className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5">
+          <MotionCard className="rounded-2xl border border-border bg-card p-6">
             <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-zinc-500">
               <TrendingUp className="size-3.5" aria-hidden />
               Day&apos;s Return
             </div>
             {isLoadingMarks ? <SkeletonBlock className="mt-4 h-9 w-40" /> : (
               <p
-                className={`mt-4 font-mono text-3xl font-semibold ${pnlClassName(hasMarks ? totals.dayPnl : null)}`}
+                className={`mt-4 font-mono tabular-nums text-3xl font-semibold ${pnlClassName(hasMarks ? totals.dayPnl : null)}`}
               >
                 {hasMarks ? formatSignedUsd(totals.dayPnl) : "—"}
               </p>
             )}
-            <p className={`mt-2 text-sm ${pnlClassName(hasMarks ? totals.dayReturnPercent : null)}`}>
+            <p className={`mt-2 font-mono text-sm tabular-nums ${pnlClassName(hasMarks ? totals.dayReturnPercent : null)}`}>
               {hasMarks ? formatPercent(totals.dayReturnPercent) : "session P&L"}
             </p>
-          </article>
+          </MotionCard>
         </section>
 
         <AnimatePresence mode="wait" initial={false}>
-        {activeView === "table" ? <motion.section key="table" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2, ease: "easeOut" }} className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/40">
-          <div className="flex items-start justify-between gap-4 border-b border-zinc-800 px-5 py-4">
+        {activeView === "table" ? <motion.section key="table" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2, ease: "easeOut" }} className="overflow-hidden rounded-2xl border border-border bg-card">
+          <div className="flex items-start justify-between gap-4 border-b border-border px-6 py-5">
             <div>
               <h2 className="text-sm font-medium tracking-wide text-zinc-200">
                 Watchlist
@@ -548,102 +566,113 @@ export function PortfolioDashboard({
               </p>
             </div>
             <div className="flex shrink-0 gap-2">
-              <button
+              <motion.button whileTap={TAP}
                 type="button"
                 onClick={openNewPositionDialog}
                 title={isAuthenticated ? "Add holding" : "Sign in to add holdings"}
-                className="rounded-lg bg-emerald-400 px-3 py-2 text-xs font-medium text-zinc-950 transition hover:bg-emerald-500"
+                className="rounded-xl bg-primary px-3 py-2 text-xs font-medium text-primary-foreground transition hover:bg-primary/85"
               >
                 Add holding
-              </button>
-              <button
+              </motion.button>
+              <motion.button whileTap={TAP}
                 type="button"
                 onClick={() => void loadQuotes()}
                 disabled={isRefreshing}
-                className="inline-flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs font-medium text-zinc-200 transition hover:bg-zinc-900 disabled:cursor-not-allowed disabled:opacity-70"
+                className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-xs font-medium text-zinc-200 transition hover:bg-accent disabled:cursor-not-allowed disabled:opacity-70"
               >
                 <RefreshCw className={`size-3.5 ${isRefreshing ? "animate-spin" : ""}`} aria-hidden />
                 Refresh Quotes
-              </button>
+              </motion.button>
             </div>
           </div>
-          <div className="border-b border-zinc-800 px-5 py-4">
-            <form onSubmit={searchAssets} className="flex max-w-2xl gap-2">
-              <div className="relative min-w-0 flex-1">
-                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" aria-hidden />
-                <input
-                  aria-label="Search assets to add to Watchlists"
-                  value={searchQuery}
-                  onChange={(event) => {
-                    setSearchQuery(event.target.value);
-                    setSearchResults([]);
-                    setHasSearched(false);
-                    setSearchError(null);
-                  }}
-                  placeholder="Search ticker, company, or crypto..."
-                  className="w-full rounded-lg border border-zinc-700 bg-zinc-950 py-2 pl-9 pr-3 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-emerald-400"
-                />
-              </div>
-              <button type="submit" disabled={isSearching} className="rounded-lg bg-emerald-400 px-4 py-2 text-sm font-medium text-zinc-950 transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60">
-                {isSearching ? "Searching..." : "Search"}
-              </button>
-            </form>
-            {searchError !== null ? <p className="mt-2 text-xs text-red-400">{searchError}</p> : null}
-            {searchResults.length > 0 ? (
-              <div className="mt-3 max-w-2xl divide-y divide-zinc-800 rounded-lg border border-zinc-800 bg-zinc-950">
-                {searchResults.map((result) => {
-                  const alreadyHeld = holdings.some((holding) => holding.symbol.toUpperCase() === result.symbol.toUpperCase());
-                  return (
-                    <button
-                      key={`${result.symbol}-${result.exchange}`}
-                      type="button"
-                      onClick={() => selectSearchResult(result)}
-                      disabled={alreadyHeld}
-                      className="flex w-full items-center justify-between gap-4 px-3 py-3 text-left transition hover:bg-zinc-900 disabled:cursor-default disabled:hover:bg-transparent"
-                    >
-                      <span className="min-w-0">
-                        <span className="block truncate font-mono text-sm text-zinc-100">{result.symbol}</span>
-                        <span className="block truncate text-xs text-zinc-500">{result.name}</span>
-                      </span>
-                      <span className="shrink-0 text-right text-xs text-zinc-500">
-                        <span className="block">{result.exchange} · {result.type}</span>
-                        {alreadyHeld ? <span className="mt-1 block text-emerald-500">In Watchlists</span> : <span className="mt-1 block text-emerald-400">Add holding</span>}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            ) : null}
-            {!isSearching && hasSearched && searchResults.length === 0 && searchError === null ? (
-              <p className="mt-2 text-xs text-zinc-500">No matching assets found.</p>
-            ) : null}
+          <div className="border-b border-border px-6 py-5">
+            <div className="relative max-w-2xl">
+              <form onSubmit={searchAssets} className="flex gap-2">
+                <div className="relative min-w-0 flex-1">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" aria-hidden />
+                  <input
+                    aria-label="Search assets to add to Watchlists"
+                    value={searchQuery}
+                    onChange={(event) => {
+                      setSearchQuery(event.target.value);
+                      dismissSearch();
+                    }}
+                    placeholder="Search ticker, company, or crypto..."
+                    className="w-full rounded-xl border border-input bg-background py-2 pl-9 pr-3 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-primary"
+                  />
+                </div>
+                <motion.button whileTap={TAP} type="submit" disabled={isSearching} className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/85 disabled:cursor-not-allowed disabled:opacity-60">
+                  {isSearching ? "Searching..." : "Search"}
+                </motion.button>
+              </form>
+              {isSearchPanelOpen ? (
+                <div className="absolute inset-x-0 top-full z-30 mt-2 overflow-hidden rounded-xl border border-input bg-popover shadow-2xl shadow-black">
+                  <div className="flex items-center justify-between gap-3 border-b border-border py-1.5 pl-3 pr-1.5">
+                    <span className="text-[11px] uppercase tracking-wider text-zinc-500">Search results</span>
+                    <motion.button whileTap={TAP} type="button" onClick={dismissSearch} aria-label="Close search results" className="rounded-xl p-1 text-zinc-500 transition hover:bg-accent hover:text-zinc-100">
+                      <X className="size-3.5" aria-hidden />
+                    </motion.button>
+                  </div>
+                  {searchError !== null ? <p className="px-3 py-3 text-xs text-rose-400">{searchError}</p> : null}
+                  {searchResults.length > 0 ? (
+                    <ScrollWindow className="max-h-64 divide-y divide-border">
+                      {searchResults.map((result) => {
+                        const alreadyHeld = holdings.some((holding) => holding.symbol.toUpperCase() === result.symbol.toUpperCase());
+                        return (
+                          <motion.button whileTap={TAP}
+                            key={`${result.symbol}-${result.exchange}`}
+                            type="button"
+                            onClick={() => selectSearchResult(result)}
+                            disabled={alreadyHeld}
+                            className="flex w-full items-center justify-between gap-4 px-3 py-3 text-left transition hover:bg-accent disabled:cursor-default disabled:hover:bg-transparent"
+                          >
+                            <span className="min-w-0">
+                              <span className="block truncate font-mono tabular-nums text-sm text-zinc-100">{result.symbol}</span>
+                              <span className="block truncate text-xs text-zinc-500">{result.name}</span>
+                            </span>
+                            <span className="shrink-0 text-right text-xs text-zinc-500">
+                              <span className="block">{result.exchange} · {result.type}</span>
+                              {alreadyHeld ? <span className="mt-1 block text-primary">In Watchlists</span> : <span className="mt-1 block text-primary">Add holding</span>}
+                            </span>
+                          </motion.button>
+                        );
+                      })}
+                    </ScrollWindow>
+                  ) : null}
+                  {searchResults.length === 0 && searchError === null ? (
+                    <p className="px-3 py-3 text-xs text-zinc-500">No matching assets found.</p>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[920px] text-left text-sm">
-              <thead className="border-b border-zinc-800 text-xs uppercase tracking-wider text-zinc-500">
+          <ScrollWindow className="h-window-main">
+            <table className="w-full min-w-[980px] border-separate border-spacing-0 text-left text-sm [&_td]:border-b [&_td]:border-border [&_th]:border-b [&_th]:border-border">
+              <thead className="sticky top-0 z-20 bg-card text-xs uppercase tracking-wider text-zinc-500">
                 <tr>
-                  <th className="px-5 py-3 font-medium">Symbol / Name</th>
-                  <th className="px-5 py-3 font-medium">Avg Cost</th>
-                  <th className="px-5 py-3 font-medium">Live Price</th>
-                  <th className="px-5 py-3 font-medium">Qty</th>
-                  <th className="px-5 py-3 font-medium">Market Value</th>
-                  <th className="px-5 py-3 font-medium text-right">
+                  <th className="px-6 py-3.5 font-medium">Symbol / Name</th>
+                  <th className="px-6 py-3.5 font-medium">Avg Cost</th>
+                  <th className="px-6 py-3.5 font-medium">Live Price</th>
+                  <th className="px-6 py-3.5 font-medium">Qty</th>
+                  <th className="px-6 py-3.5 font-medium">Market Value</th>
+                  <th className="px-6 py-3.5 font-medium text-right">
                     Unrealized PnL
                   </th>
-                  <th className="px-5 py-3 font-medium"> </th>
+                  <th className="px-6 py-3.5 font-medium"> </th>
                 </tr>
               </thead>
               {watchlistClusters.map((cluster) => (
-                <tbody key={cluster.key} className="divide-y divide-zinc-800 font-mono text-[13px]">
-                  <tr className="bg-zinc-950/70">
-                    <th colSpan={7} className="px-5 py-2 text-left font-sans text-[11px] font-medium uppercase tracking-[0.16em] text-emerald-400">
+                <tbody key={cluster.key} className="font-mono text-[13px] tabular-nums">
+                  <tr className="bg-background">
+                    <th colSpan={7} className="px-6 py-2 text-left font-sans text-[11px] font-medium uppercase tracking-[0.16em] text-primary">
                       {cluster.label}
-                      <span className="ml-2 text-zinc-600">{cluster.positions.length}</span>
+                      <span className="ml-2 font-mono tabular-nums text-zinc-600">{cluster.positions.length}</span>
                     </th>
                   </tr>
                   {cluster.positions.map((position) => (
-                    <tr key={position.symbol} className="hover:bg-zinc-900/80">
-                    <td className="px-5 py-4">
+                    <tr key={position.symbol} className="row-glow">
+                    <td className="px-6 py-5">
+                      <motion.div whileTap={TAP} className="inline-block">
                       <Link
                         href={`/?view=explore&symbol=${encodeURIComponent(position.symbol)}`}
                         onClick={(event) => {
@@ -654,7 +683,7 @@ export function PortfolioDashboard({
                         className="group text-left"
                         aria-label={`View details for ${position.symbol}`}
                       >
-                        <span className="flex items-center gap-1.5 font-sans font-medium text-zinc-100">
+                        <span className="flex items-center gap-1.5 font-mono font-medium tabular-nums text-zinc-100">
                           <span
                             className="text-base leading-none"
                             role="img"
@@ -668,13 +697,14 @@ export function PortfolioDashboard({
                           {position.name}
                         </span>
                         {quoteFor(position.symbol) !== undefined ? (
-                          <span className="mt-1 inline-flex rounded border border-zinc-800 bg-zinc-950 px-1.5 py-0.5 font-sans text-[10px] uppercase tracking-wider text-zinc-500">
+                          <span className="mt-1 inline-flex rounded-xl border border-border bg-background px-1.5 py-0.5 font-sans text-[10px] uppercase tracking-wider text-zinc-500">
                             {quoteFor(position.symbol)?.exchange ?? "Unknown market"} · {quoteFor(position.symbol)?.currency ?? "USD"}
                           </span>
                         ) : null}
                       </Link>
+                      </motion.div>
                     </td>
-                    <td className="px-5 py-4 text-zinc-300">
+                    <td className="px-6 py-5 text-zinc-300">
                       <input
                         aria-label={`${position.symbol} average cost`}
                         type="text"
@@ -692,14 +722,14 @@ export function PortfolioDashboard({
                           const holding = holdings.find((item) => item.symbol === position.symbol);
                           if (holding) draftPosition({ ...holding, averageCost });
                         }}
-                        className="w-28 rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 font-mono text-sm text-zinc-100 outline-none transition focus:border-emerald-400"
+                        className="w-28 rounded-xl border border-input bg-background px-2 py-1 font-mono tabular-nums text-sm text-zinc-100 outline-none transition focus:border-primary"
                       />
                       <span className="ml-2 text-xs text-zinc-600">{quoteFor(position.symbol)?.currency ?? "USD"}</span>
                     </td>
-                    <td className="px-5 py-4 text-zinc-100">
+                    <td className="px-6 py-5 text-zinc-100">
                       {isLoadingMarks ? <SkeletonBlock className="h-4 w-20" /> : formatMaybeAssetCurrency(position.livePrice, quoteFor(position.symbol)?.currency)}
                     </td>
-                    <td className="px-5 py-4 text-zinc-300">
+                    <td className="px-6 py-5 text-zinc-300">
                       <input
                         aria-label={`${position.symbol} quantity`}
                         type="text"
@@ -717,14 +747,14 @@ export function PortfolioDashboard({
                           const holding = holdings.find((item) => item.symbol === position.symbol);
                           if (holding) draftPosition({ ...holding, quantity });
                         }}
-                        className="w-24 rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 font-mono text-sm text-zinc-100 outline-none transition focus:border-emerald-400"
+                        className="w-24 rounded-xl border border-input bg-background px-2 py-1 font-mono tabular-nums text-sm text-zinc-100 outline-none transition focus:border-primary"
                       />
                     </td>
-                    <td className="px-5 py-4 text-zinc-100">
+                    <td className="px-6 py-5 text-zinc-100">
                       {isLoadingMarks ? <SkeletonBlock className="h-4 w-24" /> : formatMaybeAssetCurrency(position.marketValue, quoteFor(position.symbol)?.currency)}
                     </td>
                     <td
-                      className={`px-5 py-4 text-right font-medium ${pnlClassName(position.unrealizedPnl)}`}
+                      className={`px-6 py-5 text-right font-medium ${pnlClassName(position.unrealizedPnl)}`}
                     >
                       {isLoadingMarks ? <SkeletonBlock className="ml-auto h-8 w-20" /> : (
                         <>
@@ -735,22 +765,29 @@ export function PortfolioDashboard({
                         </>
                       )}
                     </td>
-                    <td className="px-5 py-4 text-right">
+                    <td className="px-6 py-5 text-right">
                       <div className="flex justify-end gap-1">
-                        <button type="button" onClick={() => openEditPositionDialog(holdings.find((holding) => holding.symbol === position.symbol) ?? position)} aria-label={`Edit ${position.symbol}`} className="rounded-md p-1.5 text-zinc-500 transition hover:bg-zinc-800 hover:text-emerald-400">
+                        <motion.button whileTap={TAP} type="button" onClick={() => openEditPositionDialog(holdings.find((holding) => holding.symbol === position.symbol) ?? position)} aria-label={`Edit ${position.symbol}`} className="rounded-xl p-1.5 text-zinc-500 transition hover:bg-accent hover:text-primary">
                           <Pencil className="size-4" aria-hidden />
-                        </button>
-                        <button type="button" onClick={() => removeHolding(position.symbol)} aria-label={`Remove ${position.symbol}`} className="rounded-md p-1.5 text-zinc-500 transition hover:bg-red-500/10 hover:text-red-400">
+                        </motion.button>
+                        <motion.button whileTap={TAP} type="button" onClick={() => removeHolding(position.symbol)} aria-label={`Remove ${position.symbol}`} className="rounded-xl p-1.5 text-zinc-500 transition hover:bg-rose-500/10 hover:text-rose-400">
                           <X className="size-4" aria-hidden />
-                        </button>
+                        </motion.button>
                       </div>
                     </td>
                   </tr>
                   ))}
                 </tbody>
               ))}
+              {positions.length === 0 ? (
+                <tbody>
+                  <tr>
+                    <td colSpan={7} className="px-6 py-16 text-center text-sm text-zinc-500">No holdings yet. Search above or add one to start tracking.</td>
+                  </tr>
+                </tbody>
+              ) : null}
             </table>
-          </div>
+          </ScrollWindow>
         </motion.section> : activeView === "visualization" ? (
           <motion.div key="visualization" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.2, ease: "easeOut" }}>
             <PortfolioVisualization

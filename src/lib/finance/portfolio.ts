@@ -109,6 +109,21 @@ export function allocationBreakdown(
   }));
 }
 
+export type SortDirection = "desc" | "asc";
+
+/** Ranks rows by value without mutating the input. Ties fall back to `tieBreak` so the order stays stable across renders. */
+export function sortByValue<T extends { value: Decimal }>(
+  rows: readonly T[],
+  direction: SortDirection,
+  tieBreak: (row: T) => string,
+): T[] {
+  return [...rows].sort((left, right) => {
+    const compared = left.value.comparedTo(right.value);
+    if (compared !== 0) return direction === "desc" ? -compared : compared;
+    return tieBreak(left).localeCompare(tieBreak(right));
+  });
+}
+
 export function quantityAfterActions(
   actions: readonly PortfolioAction[],
   assetId: string,

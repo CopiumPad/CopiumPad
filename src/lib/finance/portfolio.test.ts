@@ -9,6 +9,7 @@ import {
   parseDateInputValue,
   portfolioTotals,
   quantityAfterActions,
+  sortByValue,
   toDateInputValue,
   type Holding,
   type PortfolioAction,
@@ -163,5 +164,44 @@ describe("allocation categories and action replay", () => {
     expect(timeline[0].totalValue).toBe(850);
     expect(timeline[1].timestamp - timeline[0].timestamp).toBe(day);
     expect(timeline[1].totalValue).toBe(975);
+  });
+});
+
+describe("sortByValue", () => {
+  const rows = [
+    { key: "B", value: new Decimal("20") },
+    { key: "A", value: new Decimal("20") },
+    { key: "C", value: new Decimal("5") },
+    { key: "D", value: new Decimal("100") },
+  ];
+  const byKey = (row: { key: string }) => row.key;
+
+  it("ranks big to small", () => {
+    expect(sortByValue(rows, "desc", byKey).map(byKey)).toEqual(["D", "A", "B", "C"]);
+  });
+
+  it("ranks small to big", () => {
+    expect(sortByValue(rows, "asc", byKey).map(byKey)).toEqual(["C", "A", "B", "D"]);
+  });
+
+  it("keeps the tie-break order the same in both directions", () => {
+    const tied = rows.filter((row) => row.value.equals(20));
+    expect(sortByValue(tied, "desc", byKey).map(byKey)).toEqual(["A", "B"]);
+    expect(sortByValue(tied, "asc", byKey).map(byKey)).toEqual(["A", "B"]);
+  });
+
+  it("does not mutate the input", () => {
+    const before = rows.map(byKey);
+    sortByValue(rows, "asc", byKey);
+    expect(rows.map(byKey)).toEqual(before);
+  });
+
+  it("separates values that float comparison would treat as equal", () => {
+    const close = [
+      { key: "low", value: new Decimal("9007199254740992.01") },
+      { key: "high", value: new Decimal("9007199254740992.02") },
+    ];
+    expect(Number(close[0].value.toString())).toBe(Number(close[1].value.toString()));
+    expect(sortByValue(close, "desc", byKey).map(byKey)).toEqual(["high", "low"]);
   });
 });

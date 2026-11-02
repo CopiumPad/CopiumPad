@@ -7,7 +7,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -84,37 +84,38 @@
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
+  --background: #000000;
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
+  --card: #0b0b0c;
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
+  --popover: #0e0e0f;
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
+  --primary: #8cf000;
+  --primary-foreground: #000000;
+  --secondary: #161618;
   --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
+  --muted: #161618;
   --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
+  --accent: #161618;
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
+  --border: rgb(255 255 255 / 8%);
+  --input: rgb(255 255 255 / 14%);
+  --ring: #8cf000;
+  --glow: rgb(140 240 0 / 22%);
+  --chart-1: #5fa800;
+  --chart-2: #3b82f6;
+  --chart-3: #c98300;
+  --chart-4: #e0509f;
+  --chart-5: #8b5cf6;
+  --sidebar: #0b0b0c;
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-primary: #8cf000;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #161618;
   --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar-border: rgb(255 255 255 / 8%);
+  --sidebar-ring: #8cf000;
 }
 
 @layer base {
@@ -129,23 +130,44 @@
   }
 }
 
-@keyframes allocation-row-enter {
-  from {
-    opacity: 0;
-    transform: translateY(5px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* Fills the viewport below the page chrome, so the Table view needs no page scroll on desktop. */
+@utility h-window-main {
+  height: max(24rem, calc(100dvh - 40rem));
 }
 
-.allocation-row-enter {
-  animation: allocation-row-enter 240ms ease-out both;
+.scroll-window {
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 14%) transparent;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .allocation-row-enter {
-    animation: none;
-  }
+.scroll-window:hover {
+  scrollbar-color: var(--glow) transparent;
+}
+
+.row-glow {
+  transition: background-color 150ms ease-out, box-shadow 150ms ease-out;
+}
+
+.row-glow:hover {
+  background-color: rgb(255 255 255 / 3%);
+}
+
+.row-glow:not(tr):hover {
+  box-shadow: inset 0 0 0 1px var(--glow);
+}
+
+/* Table rows can't paint a box-shadow reliably, so the glow sits on their cells. */
+tr.row-glow > td {
+  transition: box-shadow 150ms ease-out;
+}
+
+tr.row-glow:hover > td {
+  box-shadow: inset 0 1px 0 var(--glow), inset 0 -1px 0 var(--glow);
+}
+
+tr.row-glow:hover > td:first-child {
+  box-shadow: inset 2px 0 0 var(--primary), inset 0 1px 0 var(--glow), inset 0 -1px 0 var(--glow);
 }

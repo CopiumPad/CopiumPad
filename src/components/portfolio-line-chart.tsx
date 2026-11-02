@@ -71,7 +71,7 @@ export function PortfolioLineChart({ points, currency, displayCurrencyUsdRate }:
           return (
             <g key={tick}>
               <line x1={padding} x2={width - padding} y1={y} y2={y} stroke="#27272a" strokeDasharray="4 6" />
-              <text x={6} y={y + 4} fill="#a1a1aa" fontSize="10">{formatCurrency(labelValue, currency, displayCurrencyUsdRate)}</text>
+              <text className="font-mono tabular-nums" x={6} y={y + 4} fill="#a1a1aa" fontSize="10">{formatCurrency(labelValue, currency, displayCurrencyUsdRate)}</text>
             </g>
           );
         })}
@@ -87,7 +87,7 @@ export function PortfolioLineChart({ points, currency, displayCurrencyUsdRate }:
               key={`${segment[0].timestamp}-${index}`}
               d={d}
               fill="none"
-              stroke="#34d399"
+              stroke="#8cf000"
               strokeWidth="3"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -97,13 +97,13 @@ export function PortfolioLineChart({ points, currency, displayCurrencyUsdRate }:
 
         {points.length > 0 ? (
           <g>
-            <text x={padding} y={height - 8} fill="#a1a1aa" fontSize="10">
+            <text className="font-mono tabular-nums" x={padding} y={height - 8} fill="#a1a1aa" fontSize="10">
               {new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(new Date(firstTimestamp))}
             </text>
-            <text x={width / 2} y={height - 8} textAnchor="middle" fill="#a1a1aa" fontSize="10">
+            <text className="font-mono tabular-nums" x={width / 2} y={height - 8} textAnchor="middle" fill="#a1a1aa" fontSize="10">
               {new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(new Date(firstTimestamp + timeRange / 2))}
             </text>
-            <text x={width - padding} y={height - 8} textAnchor="end" fill="#a1a1aa" fontSize="10">
+            <text className="font-mono tabular-nums" x={width - padding} y={height - 8} textAnchor="end" fill="#a1a1aa" fontSize="10">
               {new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(new Date(lastTimestamp))}
             </text>
           </g>

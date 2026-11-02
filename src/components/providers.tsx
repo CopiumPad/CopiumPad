@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
+import { MotionConfig } from "framer-motion";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { clearOtherUsers } from "@/lib/queries/keys";
@@ -47,7 +48,7 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={getQueryClient()}>
       <AuthQuerySync />
-      {children}
+      <MotionConfig reducedMotion="user">{children}</MotionConfig>
     </QueryClientProvider>
   );
 }
