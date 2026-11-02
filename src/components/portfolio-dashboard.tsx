@@ -102,7 +102,7 @@ function pnlClassName(value: DecimalInput | null): string {
     return "text-emerald-400";
   }
   if (amount.isNegative()) {
-    return "text-red-400";
+    return "text-rose-400";
   }
   return "text-zinc-400";
 }
@@ -433,15 +433,15 @@ export function PortfolioDashboard({
   return (
     <>
         {errorMessage !== null ? (
-          <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          <p className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
             {errorMessage}
           </p>
         ) : null}
-        {portfolioError ? <p role="alert" className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">{portfolioError}</p> : null}
-        {!isAuthenticated ? <p className="rounded-lg border border-zinc-800 bg-zinc-900/60 px-4 py-3 text-sm text-zinc-300">Currently displaying default data, sign in to edit</p> : null}
+        {portfolioError ? <p role="alert" className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">{portfolioError}</p> : null}
+        {!isAuthenticated ? <p className="rounded-lg border border-border bg-card px-4 py-3 text-sm text-zinc-300">Currently displaying default data, sign in to edit</p> : null}
 
         <section className="grid gap-4 md:grid-cols-3">
-          <article className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5">
+          <article className="rounded-xl border border-border bg-card p-5">
             <div className="flex items-start justify-between gap-3">
               <div className="flex flex-wrap items-center gap-2 text-xs font-medium uppercase tracking-wider text-zinc-500">
                 <Wallet className="size-3.5" aria-hidden />
@@ -454,7 +454,7 @@ export function PortfolioDashboard({
                     setDisplayCurrency(nextCurrency);
                     setDisplayCurrencyUsdRate(nextCurrency === "USD" ? 1 : null);
                   }}
-                  className="rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 text-[11px] font-medium tracking-normal text-zinc-200 outline-none transition focus:border-emerald-400"
+                  className="rounded-md border border-input bg-background px-2 py-1 text-[11px] font-medium tracking-normal text-zinc-200 outline-none transition focus:border-primary"
                 >
                   {DISPLAY_CURRENCIES.map((currency) => (
                     <option key={currency} value={currency}>
@@ -467,7 +467,7 @@ export function PortfolioDashboard({
                 <span
                   className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium ${
                     toDecimal(totals.dayPnl).isNegative()
-                      ? "border-red-500/20 bg-red-500/10 text-red-400"
+                      ? "border-rose-500/20 bg-rose-500/10 text-rose-400"
                       : "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
                   }`}
                 >
@@ -499,7 +499,7 @@ export function PortfolioDashboard({
             </p>
           </article>
 
-          <article className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5">
+          <article className="rounded-xl border border-border bg-card p-5">
             <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-zinc-500">
               <ChartLine className="size-3.5" aria-hidden />
               Net Unrealized PnL
@@ -518,7 +518,7 @@ export function PortfolioDashboard({
             </p>
           </article>
 
-          <article className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5">
+          <article className="rounded-xl border border-border bg-card p-5">
             <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-zinc-500">
               <TrendingUp className="size-3.5" aria-hidden />
               Day&apos;s Return
@@ -537,8 +537,8 @@ export function PortfolioDashboard({
         </section>
 
         <AnimatePresence mode="wait" initial={false}>
-        {activeView === "table" ? <motion.section key="table" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2, ease: "easeOut" }} className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/40">
-          <div className="flex items-start justify-between gap-4 border-b border-zinc-800 px-5 py-4">
+        {activeView === "table" ? <motion.section key="table" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2, ease: "easeOut" }} className="overflow-hidden rounded-xl border border-border bg-card">
+          <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
             <div>
               <h2 className="text-sm font-medium tracking-wide text-zinc-200">
                 Watchlist
@@ -552,7 +552,7 @@ export function PortfolioDashboard({
                 type="button"
                 onClick={openNewPositionDialog}
                 title={isAuthenticated ? "Add holding" : "Sign in to add holdings"}
-                className="rounded-lg bg-emerald-400 px-3 py-2 text-xs font-medium text-zinc-950 transition hover:bg-emerald-500"
+                className="rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground transition hover:bg-primary/85"
               >
                 Add holding
               </button>
@@ -560,14 +560,14 @@ export function PortfolioDashboard({
                 type="button"
                 onClick={() => void loadQuotes()}
                 disabled={isRefreshing}
-                className="inline-flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs font-medium text-zinc-200 transition hover:bg-zinc-900 disabled:cursor-not-allowed disabled:opacity-70"
+                className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-xs font-medium text-zinc-200 transition hover:bg-accent disabled:cursor-not-allowed disabled:opacity-70"
               >
                 <RefreshCw className={`size-3.5 ${isRefreshing ? "animate-spin" : ""}`} aria-hidden />
                 Refresh Quotes
               </button>
             </div>
           </div>
-          <div className="border-b border-zinc-800 px-5 py-4">
+          <div className="border-b border-border px-5 py-4">
             <form onSubmit={searchAssets} className="flex max-w-2xl gap-2">
               <div className="relative min-w-0 flex-1">
                 <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" aria-hidden />
@@ -581,16 +581,16 @@ export function PortfolioDashboard({
                     setSearchError(null);
                   }}
                   placeholder="Search ticker, company, or crypto..."
-                  className="w-full rounded-lg border border-zinc-700 bg-zinc-950 py-2 pl-9 pr-3 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-emerald-400"
+                  className="w-full rounded-lg border border-input bg-background py-2 pl-9 pr-3 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-primary"
                 />
               </div>
-              <button type="submit" disabled={isSearching} className="rounded-lg bg-emerald-400 px-4 py-2 text-sm font-medium text-zinc-950 transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60">
+              <button type="submit" disabled={isSearching} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/85 disabled:cursor-not-allowed disabled:opacity-60">
                 {isSearching ? "Searching..." : "Search"}
               </button>
             </form>
-            {searchError !== null ? <p className="mt-2 text-xs text-red-400">{searchError}</p> : null}
+            {searchError !== null ? <p className="mt-2 text-xs text-rose-400">{searchError}</p> : null}
             {searchResults.length > 0 ? (
-              <div className="mt-3 max-w-2xl divide-y divide-zinc-800 rounded-lg border border-zinc-800 bg-zinc-950">
+              <div className="mt-3 max-w-2xl divide-y divide-border rounded-lg border border-border bg-background">
                 {searchResults.map((result) => {
                   const alreadyHeld = holdings.some((holding) => holding.symbol.toUpperCase() === result.symbol.toUpperCase());
                   return (
@@ -599,7 +599,7 @@ export function PortfolioDashboard({
                       type="button"
                       onClick={() => selectSearchResult(result)}
                       disabled={alreadyHeld}
-                      className="flex w-full items-center justify-between gap-4 px-3 py-3 text-left transition hover:bg-zinc-900 disabled:cursor-default disabled:hover:bg-transparent"
+                      className="flex w-full items-center justify-between gap-4 px-3 py-3 text-left transition hover:bg-accent disabled:cursor-default disabled:hover:bg-transparent"
                     >
                       <span className="min-w-0">
                         <span className="block truncate font-mono text-sm text-zinc-100">{result.symbol}</span>
@@ -607,7 +607,7 @@ export function PortfolioDashboard({
                       </span>
                       <span className="shrink-0 text-right text-xs text-zinc-500">
                         <span className="block">{result.exchange} · {result.type}</span>
-                        {alreadyHeld ? <span className="mt-1 block text-emerald-500">In Watchlists</span> : <span className="mt-1 block text-emerald-400">Add holding</span>}
+                        {alreadyHeld ? <span className="mt-1 block text-primary">In Watchlists</span> : <span className="mt-1 block text-primary">Add holding</span>}
                       </span>
                     </button>
                   );
@@ -620,7 +620,7 @@ export function PortfolioDashboard({
           </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[920px] text-left text-sm">
-              <thead className="border-b border-zinc-800 text-xs uppercase tracking-wider text-zinc-500">
+              <thead className="border-b border-border text-xs uppercase tracking-wider text-zinc-500">
                 <tr>
                   <th className="px-5 py-3 font-medium">Symbol / Name</th>
                   <th className="px-5 py-3 font-medium">Avg Cost</th>
@@ -634,15 +634,15 @@ export function PortfolioDashboard({
                 </tr>
               </thead>
               {watchlistClusters.map((cluster) => (
-                <tbody key={cluster.key} className="divide-y divide-zinc-800 font-mono text-[13px]">
-                  <tr className="bg-zinc-950/70">
-                    <th colSpan={7} className="px-5 py-2 text-left font-sans text-[11px] font-medium uppercase tracking-[0.16em] text-emerald-400">
+                <tbody key={cluster.key} className="divide-y divide-border font-mono text-[13px]">
+                  <tr className="bg-background/70">
+                    <th colSpan={7} className="px-5 py-2 text-left font-sans text-[11px] font-medium uppercase tracking-[0.16em] text-primary">
                       {cluster.label}
                       <span className="ml-2 text-zinc-600">{cluster.positions.length}</span>
                     </th>
                   </tr>
                   {cluster.positions.map((position) => (
-                    <tr key={position.symbol} className="hover:bg-zinc-900/80">
+                    <tr key={position.symbol} className="hover:bg-accent">
                     <td className="px-5 py-4">
                       <Link
                         href={`/?view=explore&symbol=${encodeURIComponent(position.symbol)}`}
@@ -668,7 +668,7 @@ export function PortfolioDashboard({
                           {position.name}
                         </span>
                         {quoteFor(position.symbol) !== undefined ? (
-                          <span className="mt-1 inline-flex rounded border border-zinc-800 bg-zinc-950 px-1.5 py-0.5 font-sans text-[10px] uppercase tracking-wider text-zinc-500">
+                          <span className="mt-1 inline-flex rounded border border-border bg-background px-1.5 py-0.5 font-sans text-[10px] uppercase tracking-wider text-zinc-500">
                             {quoteFor(position.symbol)?.exchange ?? "Unknown market"} · {quoteFor(position.symbol)?.currency ?? "USD"}
                           </span>
                         ) : null}
@@ -692,7 +692,7 @@ export function PortfolioDashboard({
                           const holding = holdings.find((item) => item.symbol === position.symbol);
                           if (holding) draftPosition({ ...holding, averageCost });
                         }}
-                        className="w-28 rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 font-mono text-sm text-zinc-100 outline-none transition focus:border-emerald-400"
+                        className="w-28 rounded-md border border-input bg-background px-2 py-1 font-mono text-sm text-zinc-100 outline-none transition focus:border-primary"
                       />
                       <span className="ml-2 text-xs text-zinc-600">{quoteFor(position.symbol)?.currency ?? "USD"}</span>
                     </td>
@@ -717,7 +717,7 @@ export function PortfolioDashboard({
                           const holding = holdings.find((item) => item.symbol === position.symbol);
                           if (holding) draftPosition({ ...holding, quantity });
                         }}
-                        className="w-24 rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 font-mono text-sm text-zinc-100 outline-none transition focus:border-emerald-400"
+                        className="w-24 rounded-md border border-input bg-background px-2 py-1 font-mono text-sm text-zinc-100 outline-none transition focus:border-primary"
                       />
                     </td>
                     <td className="px-5 py-4 text-zinc-100">
@@ -737,10 +737,10 @@ export function PortfolioDashboard({
                     </td>
                     <td className="px-5 py-4 text-right">
                       <div className="flex justify-end gap-1">
-                        <button type="button" onClick={() => openEditPositionDialog(holdings.find((holding) => holding.symbol === position.symbol) ?? position)} aria-label={`Edit ${position.symbol}`} className="rounded-md p-1.5 text-zinc-500 transition hover:bg-zinc-800 hover:text-emerald-400">
+                        <button type="button" onClick={() => openEditPositionDialog(holdings.find((holding) => holding.symbol === position.symbol) ?? position)} aria-label={`Edit ${position.symbol}`} className="rounded-md p-1.5 text-zinc-500 transition hover:bg-accent hover:text-primary">
                           <Pencil className="size-4" aria-hidden />
                         </button>
-                        <button type="button" onClick={() => removeHolding(position.symbol)} aria-label={`Remove ${position.symbol}`} className="rounded-md p-1.5 text-zinc-500 transition hover:bg-red-500/10 hover:text-red-400">
+                        <button type="button" onClick={() => removeHolding(position.symbol)} aria-label={`Remove ${position.symbol}`} className="rounded-md p-1.5 text-zinc-500 transition hover:bg-rose-500/10 hover:text-rose-400">
                           <X className="size-4" aria-hidden />
                         </button>
                       </div>

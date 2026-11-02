@@ -29,7 +29,7 @@ export function AllocationPieChart({ rows, currency, usdRate }: AllocationPieCha
 
   if (rows.length === 0 || total.isZero()) {
     return (
-      <div className="rounded-lg border border-dashed border-zinc-800 bg-zinc-950/40 px-4 py-6 text-center text-xs text-zinc-500">
+      <div className="rounded-lg border border-dashed border-border bg-background/40 px-4 py-6 text-center text-xs text-zinc-500">
         Allocation appears when live quotes are available.
       </div>
     );
@@ -87,7 +87,7 @@ export function AllocationPieChart({ rows, currency, usdRate }: AllocationPieCha
               key={slice.key}
               d={slice.path}
               fill={slice.color}
-              stroke="#09090b"
+              stroke="#0b0b0c"
               strokeWidth={2}
               className="transition-all duration-500"
             >
@@ -110,7 +110,7 @@ export function AllocationPieChart({ rows, currency, usdRate }: AllocationPieCha
               </g>
             );
           })}
-          <circle cx={centerX} cy={centerY} r="48" fill="#09090b" stroke="#27272a" strokeWidth="1" />
+          <circle cx={centerX} cy={centerY} r="48" fill="#0b0b0c" stroke="#27272a" strokeWidth="1" />
           <text x={centerX} y={centerY - 5} textAnchor="middle" fill="#a1a1aa" fontSize="11" fontWeight="600">Total</text>
           <text x={centerX} y={centerY + 14} textAnchor="middle" fill="#f4f4f5" fontSize="14" fontWeight="700">
             {rows.length}
@@ -120,7 +120,7 @@ export function AllocationPieChart({ rows, currency, usdRate }: AllocationPieCha
 
       <div className="flex-1 space-y-2">
         {rows.map((row) => (
-          <div key={row.key} className="flex items-center gap-3 rounded-md border border-zinc-800 bg-zinc-950/30 px-3 py-2" title={`${row.label}: ${formatValue(row.value, currency, usdRate)} (${row.weight.toFixed(2)}%)`}>
+          <div key={row.key} className="flex items-center gap-3 rounded-md border border-border bg-background/30 px-3 py-2" title={`${row.label}: ${formatValue(row.value, currency, usdRate)} (${row.weight.toFixed(2)}%)`}>
             <span className="size-2.5 shrink-0 rounded-sm" style={{ backgroundColor: row.color }} />
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-3 text-xs">

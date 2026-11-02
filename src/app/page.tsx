@@ -50,7 +50,7 @@ export default function Home() {
   }
 
   return (
-    <motion.main initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.24, ease: "easeOut" }} className="min-h-full bg-zinc-950 font-sans text-zinc-100">
+    <motion.main initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.24, ease: "easeOut" }} className="min-h-full bg-background font-sans text-zinc-100">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-8">
         <AppHeader
           activeView={activeView}

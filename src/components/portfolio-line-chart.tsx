@@ -87,7 +87,7 @@ export function PortfolioLineChart({ points, currency, displayCurrencyUsdRate }:
               key={`${segment[0].timestamp}-${index}`}
               d={d}
               fill="none"
-              stroke="#34d399"
+              stroke="#8cf000"
               strokeWidth="3"
               strokeLinecap="round"
               strokeLinejoin="round"
