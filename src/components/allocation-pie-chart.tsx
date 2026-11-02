@@ -29,7 +29,7 @@ export function AllocationPieChart({ rows, currency, usdRate }: AllocationPieCha
 
   if (rows.length === 0 || total.isZero()) {
     return (
-      <div className="rounded-lg border border-dashed border-border bg-background/40 px-4 py-6 text-center text-xs text-zinc-500">
+      <div className="rounded-xl border border-dashed border-border bg-background/40 px-4 py-6 text-center text-xs text-zinc-500">
         Allocation appears when live quotes are available.
       </div>
     );
@@ -103,7 +103,7 @@ export function AllocationPieChart({ rows, currency, usdRate }: AllocationPieCha
           return (
             <g key={`callout-${slice.key}`}>
               <path d={`M ${edgeX} ${edgeY} L ${elbowX} ${labelY} L ${labelX} ${labelY}`} fill="none" stroke={slice.color} strokeWidth="1" />
-              <text x={centerX + side * 126} y={labelY + 3} textAnchor={side < 0 ? "end" : "start"} fill="#d4d4d8" fontSize="10">
+              <text className="font-mono tabular-nums" x={centerX + side * 126} y={labelY + 3} textAnchor={side < 0 ? "end" : "start"} fill="#d4d4d8" fontSize="10">
                 {label}
               </text>
             </g>
@@ -111,7 +111,7 @@ export function AllocationPieChart({ rows, currency, usdRate }: AllocationPieCha
         })}
         <circle cx={centerX} cy={centerY} r="48" fill="#0b0b0c" stroke="#27272a" strokeWidth="1" />
         <text x={centerX} y={centerY - 5} textAnchor="middle" fill="#a1a1aa" fontSize="11" fontWeight="600">Total</text>
-        <text x={centerX} y={centerY + 14} textAnchor="middle" fill="#f4f4f5" fontSize="14" fontWeight="700">
+        <text className="font-mono tabular-nums" x={centerX} y={centerY + 14} textAnchor="middle" fill="#f4f4f5" fontSize="14" fontWeight="700">
           {rows.length}
         </text>
       </svg>

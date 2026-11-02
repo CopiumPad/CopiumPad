@@ -8,7 +8,7 @@ export function SkeletonBlock({ className }: { className?: string }) {
 
 function CardSkeleton() {
   return (
-    <article className="rounded-xl border border-border bg-card p-5">
+    <article className="rounded-2xl border border-border bg-card p-6">
       <SkeletonBlock className="h-4 w-36" />
       <SkeletonBlock className="mt-4 h-9 w-40" />
       <SkeletonBlock className="mt-2 h-4 w-24" />
@@ -18,7 +18,7 @@ function CardSkeleton() {
 
 function TableRowSkeleton() {
   return (
-    <div className="flex items-center justify-between gap-6 px-5 py-4">
+    <div className="flex items-center justify-between gap-6 px-6 py-5">
       <div className="min-w-0 flex-1">
         <SkeletonBlock className="h-4 w-20" />
         <SkeletonBlock className="mt-2 h-3 w-36" />
@@ -34,22 +34,22 @@ function TableRowSkeleton() {
 
 export function DashboardSkeleton() {
   return (
-    <div role="status" aria-busy="true" aria-label="Loading portfolio" className="flex flex-col gap-8">
+    <div role="status" aria-busy="true" aria-label="Loading portfolio" className="flex flex-col gap-10">
       <section className="grid gap-4 md:grid-cols-3">
         <CardSkeleton />
         <CardSkeleton />
         <CardSkeleton />
       </section>
-      <section className="overflow-hidden rounded-xl border border-border bg-card">
-        <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
+      <section className="overflow-hidden rounded-2xl border border-border bg-card">
+        <div className="flex items-start justify-between gap-4 border-b border-border px-6 py-5">
           <div>
             <SkeletonBlock className="h-5 w-24" />
             <SkeletonBlock className="mt-1 h-4 w-52" />
           </div>
-          <SkeletonBlock className="h-8 w-48 rounded-lg" />
+          <SkeletonBlock className="h-8 w-48 rounded-xl" />
         </div>
-        <div className="border-b border-border px-5 py-4">
-          <SkeletonBlock className="h-9 w-full max-w-2xl rounded-lg" />
+        <div className="border-b border-border px-6 py-5">
+          <SkeletonBlock className="h-9 w-full max-w-2xl rounded-xl" />
         </div>
         <div className="h-window-main divide-y divide-border overflow-hidden">
           {Array.from({ length: SKELETON_ROWS }, (_, index) => <TableRowSkeleton key={index} />)}

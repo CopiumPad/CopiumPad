@@ -94,16 +94,16 @@ export function AccountMenu({ isLoginOpen, onLoginOpenChange }: AccountMenuProps
           </button>
         )}
         {isMenuOpen ? (
-          <div role="menu" className="absolute right-0 top-full z-40 mt-2 w-60 overflow-hidden rounded-lg border border-border bg-card p-1.5 shadow-2xl shadow-black/40">
+          <div role="menu" className="absolute right-0 top-full z-40 mt-2 w-60 overflow-hidden rounded-xl border border-border bg-card p-1.5 shadow-2xl shadow-black/40">
             {user ? (
               <>
                 <div className="border-b border-border px-3 py-2"><p className="text-xs font-medium text-zinc-100">{profile?.username || "My Account"}</p><p className="mt-0.5 truncate text-[11px] text-zinc-500">{user.email}</p></div>
-                <button role="menuitem" type="button" onClick={() => { setIsMenuOpen(false); setIsNotificationModalOpen(true); }} className="flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-xs text-zinc-300 transition hover:bg-accent hover:text-zinc-50"><Bell className="size-4 text-zinc-500" aria-hidden />Notifications &amp; Alerts</button>
-                <button role="menuitem" type="button" onClick={() => { setIsMenuOpen(false); setIsProfileOpen(true); }} className="flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-xs text-zinc-300 transition hover:bg-accent hover:text-zinc-50"><Settings className="size-4 text-zinc-500" aria-hidden />Edit Profile</button>
-                <button role="menuitem" type="button" onClick={() => { setIsMenuOpen(false); void signOut(); }} className="flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-xs text-rose-400 transition hover:bg-rose-500/10"><LogOut className="size-4" aria-hidden />Log Out</button>
+                <button role="menuitem" type="button" onClick={() => { setIsMenuOpen(false); setIsNotificationModalOpen(true); }} className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-xs text-zinc-300 transition hover:bg-accent hover:text-zinc-50"><Bell className="size-4 text-zinc-500" aria-hidden />Notifications &amp; Alerts</button>
+                <button role="menuitem" type="button" onClick={() => { setIsMenuOpen(false); setIsProfileOpen(true); }} className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-xs text-zinc-300 transition hover:bg-accent hover:text-zinc-50"><Settings className="size-4 text-zinc-500" aria-hidden />Edit Profile</button>
+                <button role="menuitem" type="button" onClick={() => { setIsMenuOpen(false); void signOut(); }} className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-xs text-rose-400 transition hover:bg-rose-500/10"><LogOut className="size-4" aria-hidden />Log Out</button>
               </>
             ) : (
-              <button type="button" onClick={() => { setIsMenuOpen(false); setError(null); setNotice(null); onLoginOpenChange(true); }} className="flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-xs text-zinc-200 transition hover:bg-accent"><CircleUserRound className="size-4 text-zinc-500" aria-hidden />Sign in / Sign up</button>
+              <button type="button" onClick={() => { setIsMenuOpen(false); setError(null); setNotice(null); onLoginOpenChange(true); }} className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-xs text-zinc-200 transition hover:bg-accent"><CircleUserRound className="size-4 text-zinc-500" aria-hidden />Sign in / Sign up</button>
             )}
           </div>
         ) : null}
@@ -112,18 +112,18 @@ export function AccountMenu({ isLoginOpen, onLoginOpenChange }: AccountMenuProps
       {user && isNotificationModalOpen ? <NotificationModal userId={user.id} onClose={() => setIsNotificationModalOpen(false)} /> : null}
       {isLoginOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" role="presentation">
-          <section aria-labelledby="account-login-title" aria-modal="true" className="w-full max-w-sm rounded-lg border border-input bg-card p-6 shadow-2xl" role="dialog">
+          <section aria-labelledby="account-login-title" aria-modal="true" className="w-full max-w-sm rounded-2xl border border-input bg-card p-6 shadow-2xl" role="dialog">
             <div className="flex items-start justify-between gap-4">
               <div><h2 id="account-login-title" className="text-lg font-semibold text-zinc-100">Sign in or create account</h2><p className="mt-1 text-sm text-zinc-400">We&apos;ll email you a secure one-time link.</p></div>
               <button type="button" onClick={() => onLoginOpenChange(false)} aria-label="Close sign-in dialog" className="text-xl leading-none text-zinc-500 hover:text-zinc-200">×</button>
             </div>
             <form onSubmit={sendMagicLink} className="mt-5 space-y-4">
               <label className="block text-sm text-zinc-300">Email
-                <input required type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-zinc-100 outline-none focus:border-primary" />
+                <input required type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-zinc-100 outline-none focus:border-primary" />
               </label>
               {notice ? <p role="status" className="text-sm text-primary">{notice}</p> : null}
               {error ? <p role="alert" className="text-sm text-rose-400">{error}</p> : null}
-              <button type="submit" disabled={isSending} className="w-full rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/85 disabled:opacity-60">{isSending ? "Sending…" : "Email me a sign-in link"}</button>
+              <button type="submit" disabled={isSending} className="w-full rounded-xl bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/85 disabled:opacity-60">{isSending ? "Sending…" : "Email me a sign-in link"}</button>
             </form>
           </section>
         </div>

@@ -27,7 +27,7 @@ export function AppHeader({ activeView, onViewChange, isLoginOpen, onLoginOpenCh
   return (
     <header className="flex flex-col gap-5 border-b border-border pb-5 lg:flex-row lg:items-center lg:justify-between">
       <Link href="/" className="flex min-w-0 items-center gap-3" aria-label="CopiumPad home">
-        <Image src="/icon.jpg" alt="CopiumPad logo" width={42} height={42} priority className="size-10 rounded-md border border-border object-cover" />
+        <Image src="/icon.jpg" alt="CopiumPad logo" width={42} height={42} priority className="size-10 rounded-xl border border-border object-cover" />
         <span className="min-w-0">
           <span className="block text-lg font-semibold leading-5 text-zinc-50">CopiumPad</span>
           <span className="mt-1 block truncate text-xs text-zinc-500">Portfolio intelligence, minus the spreadsheets.</span>

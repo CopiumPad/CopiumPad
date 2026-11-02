@@ -185,36 +185,36 @@ export function PortfolioVisualization({
 
   return (
     <div className="space-y-5">
-      <section className="rounded-xl border border-border bg-card">
-        <div className="flex flex-col gap-3 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <section className="rounded-2xl border border-border bg-card">
+        <div className="flex flex-col gap-3 border-b border-border px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-sm font-medium text-zinc-100">Asset allocation</h2>
             <p className="mt-1 text-xs text-zinc-500">Current marked value, weighted across assets with available quotes.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <div role="group" aria-label="Rank allocations" className="flex rounded-xl border border-input p-0.5">
+            <div role="group" aria-label="Rank allocations" className="flex rounded-2xl border border-input p-0.5">
               {RANK_OPTIONS.map((option) => {
                 const isActive = sortDirection === option.direction;
                 return (
-                  <button key={option.direction} type="button" aria-pressed={isActive} onClick={() => setSortDirection(option.direction)} className="relative z-0 rounded-[0.625rem] px-3 py-1.5 text-xs font-medium text-zinc-400 transition-colors hover:text-zinc-100">
-                    {isActive ? <motion.span layoutId="allocation-rank-active" transition={{ type: "spring", stiffness: 420, damping: 34 }} className="absolute inset-0 -z-10 rounded-[0.625rem] bg-primary" /> : null}
+                  <motion.button whileTap={TAP} key={option.direction} type="button" aria-pressed={isActive} onClick={() => setSortDirection(option.direction)} className="relative z-0 rounded-xl px-3 py-1.5 text-xs font-medium text-zinc-400 transition-colors hover:text-zinc-100">
+                    {isActive ? <motion.span layoutId="allocation-rank-active" transition={{ type: "spring", stiffness: 420, damping: 34 }} className="absolute inset-0 -z-10 rounded-xl bg-primary" /> : null}
                     <span className={isActive ? "text-primary-foreground" : ""}>{option.label}</span>
-                  </button>
+                  </motion.button>
                 );
               })}
             </div>
-            <button type="button" aria-pressed={categorized} onClick={() => {
+            <motion.button whileTap={TAP} type="button" aria-pressed={categorized} onClick={() => {
               setCategorized((current) => !current);
               setExpandedCategory(null);
-            }} className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-medium transition ${categorized ? "border-primary/60 bg-primary/10 text-primary" : "border-input text-zinc-300 hover:bg-accent"}`}>
+            }} className={`inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-medium transition ${categorized ? "border-primary/60 bg-primary/10 text-primary" : "border-input text-zinc-300 hover:bg-accent"}`}>
               {categorized ? "Show assets" : "Categorize"}
-            </button>
+            </motion.button>
           </div>
         </div>
         {allocations.length === 0 || totalValue.isZero() ? (
-          <p className="flex h-[24rem] items-center justify-center px-5 text-center text-sm text-zinc-500">Allocation appears when live quotes are available.</p>
+          <p className="flex h-[24rem] items-center justify-center px-6 text-center text-sm text-zinc-500">Allocation appears when live quotes are available.</p>
         ) : (
-          <div className="grid gap-6 px-5 py-5 lg:grid-cols-2 lg:items-center">
+          <div className="grid gap-6 px-6 py-6 lg:grid-cols-2 lg:items-center">
             <AllocationPieChart
               rows={displayRows.map((row) => ({
                 key: row.key,
@@ -227,19 +227,19 @@ export function PortfolioVisualization({
               currency={displayCurrency}
               usdRate={displayCurrencyUsdRate}
             />
-            <ScrollWindow className="h-80 divide-y divide-border pr-3 lg:h-[22rem]">
+            <ScrollWindow className="h-80 space-y-1 pr-3 lg:h-[22rem]">
               {rankedRows.map((row, index) => {
                 const isExpanded = categorized && expandedCategory === row.key;
                 return (
-                  <motion.div key={row.key} layout="position" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.24, ease: "easeOut", delay: Math.min(index, 8) * 0.035, layout: { duration: 0.28, ease: "easeInOut" } }} className="py-4">
+                  <motion.div key={row.key} layout="position" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.24, ease: "easeOut", delay: Math.min(index, 8) * 0.035, layout: { duration: 0.28, ease: "easeInOut" } }} className="row-glow rounded-xl px-3 py-4">
                     <motion.button whileTap={categorized ? TAP : undefined} type="button" onClick={() => categorized && setExpandedCategory(isExpanded ? null : row.key)} disabled={!categorized} aria-expanded={categorized ? isExpanded : undefined} className={`grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 text-left ${categorized ? "cursor-pointer" : "cursor-default"}`}>
                       <span className="flex min-w-0 items-center gap-2 text-sm text-zinc-200">
                         <span className="size-2 shrink-0 rounded-sm" style={{ backgroundColor: row.color }} />
-                        <span className="truncate">{row.label}</span>
+                        <span className="truncate">{categorized ? row.label : <><span className="font-mono tabular-nums">{row.key}</span> <span className="text-zinc-500">{row.members[0]?.name}</span></>}</span>
                         {categorized ? (isExpanded ? <ChevronDown className="size-3.5 text-zinc-500" aria-hidden /> : <ChevronRight className="size-3.5 text-zinc-500" aria-hidden />) : null}
                       </span>
-                      <span className="text-right font-mono text-xs text-zinc-300">{formatValue(row.value, displayCurrency, displayCurrencyUsdRate)} <span className="ml-2 text-zinc-500">{row.weight.toDecimalPlaces(2).toFixed(2)}%</span></span>
-                      <span className="col-span-2 h-1.5 overflow-hidden bg-muted">
+                      <span className="text-right font-mono tabular-nums text-xs text-zinc-300">{formatValue(row.value, displayCurrency, displayCurrencyUsdRate)} <span className="ml-2 text-zinc-500">{row.weight.toDecimalPlaces(2).toFixed(2)}%</span></span>
+                      <span className="col-span-2 h-1.5 overflow-hidden rounded-full bg-muted">
                         <span className="block h-full transition-[width] duration-500 ease-out" style={{ width: `${Math.max(0, Math.min(row.weight.toNumber(), 100))}%`, backgroundColor: row.color }} />
                       </span>
                     </motion.button>
@@ -247,8 +247,8 @@ export function PortfolioVisualization({
                       <div className="ml-4 mt-3 space-y-2 border-l border-border pl-4">
                         {sortByValue(row.members, sortDirection, (member) => member.symbol).map((member) => (
                           <div key={member.symbol} className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-xs">
-                            <span className="truncate text-zinc-400">{member.name} <span className="text-zinc-600">{member.symbol}</span></span>
-                            <span className="font-mono text-zinc-400">{formatValue(member.value, displayCurrency, displayCurrencyUsdRate)} · {member.weight.toFixed(2)}%</span>
+                            <span className="truncate text-zinc-400">{member.name} <span className="font-mono tabular-nums text-zinc-600">{member.symbol}</span></span>
+                            <span className="font-mono tabular-nums text-zinc-400">{formatValue(member.value, displayCurrency, displayCurrencyUsdRate)} · {member.weight.toFixed(2)}%</span>
                           </div>
                         ))}
                       </div>
@@ -259,25 +259,25 @@ export function PortfolioVisualization({
             </ScrollWindow>
           </div>
         )}
-        <div className="flex justify-between border-t border-border px-5 py-3 text-xs text-zinc-500">
+        <div className="flex justify-between border-t border-border px-6 py-3.5 text-xs text-zinc-500">
           <span>Marked total</span>
-          <span className="font-mono text-zinc-300">{formatValue(totalValue, displayCurrency, displayCurrencyUsdRate)}</span>
+          <span className="font-mono tabular-nums text-zinc-300">{formatValue(totalValue, displayCurrency, displayCurrencyUsdRate)}</span>
         </div>
       </section>
 
-      <section className="rounded-xl border border-border bg-card">
-        <div className="flex flex-col gap-3 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <section className="rounded-2xl border border-border bg-card">
+        <div className="flex flex-col gap-3 border-b border-border px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-sm font-medium text-zinc-100">Portfolio tracking</h2>
             <p className="mt-1 text-xs text-zinc-500">{isRefreshing ? "Updating live marks…" : "Latest value is based on current market quotes."}</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={openActionDialog} disabled={!isActionsHydrated || positions.length === 0} className="inline-flex items-center gap-2 rounded-md border border-input px-3 py-2 text-xs font-medium text-zinc-200 hover:bg-accent disabled:opacity-50"><Plus className="size-3.5" aria-hidden />Add an action</button>
-            <button type="button" onClick={setInitialPoint} disabled={isAuthenticated && (!isActionsHydrated || positions.length === 0 || positions.some((position) => position.livePrice === null))} className="rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/85 disabled:cursor-not-allowed disabled:opacity-50">Set initial point</button>
+            <motion.button whileTap={TAP} type="button" onClick={openActionDialog} disabled={!isActionsHydrated || positions.length === 0} className="inline-flex items-center gap-2 rounded-xl border border-input px-3 py-2 text-xs font-medium text-zinc-200 hover:bg-accent disabled:opacity-50"><Plus className="size-3.5" aria-hidden />Add an action</motion.button>
+            <motion.button whileTap={TAP} type="button" onClick={setInitialPoint} disabled={isAuthenticated && (!isActionsHydrated || positions.length === 0 || positions.some((position) => position.livePrice === null))} className="rounded-xl bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/85 disabled:cursor-not-allowed disabled:opacity-50">Set initial point</motion.button>
           </div>
         </div>
-        <div className="grid gap-5 px-5 py-6 md:grid-cols-[minmax(0,1fr)_220px]">
-          <div className="flex min-h-48 flex-col items-center justify-center rounded-lg border border-border bg-background/30 p-3 text-center">
+        <div className="grid gap-5 px-6 py-7 md:grid-cols-[minmax(0,1fr)_220px]">
+          <div className="flex min-h-48 flex-col items-center justify-center rounded-xl border border-border bg-background/30 p-3 text-center">
             {chartPoints.length === 0 ? (
               <>
                 <h3 className="text-sm font-medium text-zinc-300">No portfolio actions recorded yet.</h3>
@@ -289,14 +289,14 @@ export function PortfolioVisualization({
           </div>
           <div className="flex flex-col justify-center border-l border-border pl-5">
             <span className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">Current marked value</span>
-            <span className="mt-2 font-mono text-2xl font-semibold text-zinc-100">{formatValue(totalValue, displayCurrency, displayCurrencyUsdRate)}</span>
-            <span className="mt-2 text-xs text-zinc-500">{allocations.length} assets with available marks</span>
+            <span className="mt-2 font-mono tabular-nums text-2xl font-semibold text-zinc-100">{formatValue(totalValue, displayCurrency, displayCurrencyUsdRate)}</span>
+            <span className="mt-2 font-mono text-xs tabular-nums text-zinc-500">{allocations.length} assets with available marks</span>
           </div>
         </div>
       </section>
 
-      <details className="group rounded-xl border border-border bg-card">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4">
+      <details className="group rounded-2xl border border-border bg-card">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-6 py-5">
           <span>
             <span className="block text-sm font-medium text-zinc-100">Action history</span>
             <span className="mt-1 block text-xs text-zinc-500">{isActionsHydrated ? `${actions.length} recorded ${actions.length === 1 ? "entry" : "entries"}` : "Loading action history"}; separate from watchlist holdings</span>
@@ -304,19 +304,19 @@ export function PortfolioVisualization({
           <ChevronDown className="size-4 text-zinc-500 transition group-open:rotate-180" aria-hidden />
         </summary>
         <div className="border-t border-border">
-          {!isActionsHydrated ? <p className="flex h-80 items-center justify-center px-5 text-center text-sm text-zinc-500">Loading action history…</p> : actions.length === 0 ? <p className="flex h-80 items-center justify-center px-5 text-center text-sm text-zinc-500">No actions recorded. Set an initial point to establish a starting quantity.</p> : (
+          {!isActionsHydrated ? <p className="flex h-80 items-center justify-center px-6 text-center text-sm text-zinc-500">Loading action history…</p> : actions.length === 0 ? <p className="flex h-80 items-center justify-center px-6 text-center text-sm text-zinc-500">No actions recorded. Set an initial point to establish a starting quantity.</p> : (
             <ScrollWindow className="h-80">
               <table className="w-full min-w-[640px] border-separate border-spacing-0 text-left text-xs [&_td]:border-b [&_td]:border-border [&_th]:border-b [&_th]:border-border">
-                <thead className="sticky top-0 z-20 bg-card text-[10px] uppercase tracking-wider text-zinc-500"><tr><th className="px-5 py-3 font-medium">Date</th><th className="px-5 py-3 font-medium">Asset</th><th className="px-5 py-3 font-medium">Type</th><th className="px-5 py-3 font-medium">Quantity</th><th className="px-5 py-3 font-medium">Price</th><th className="px-5 py-3" /></tr></thead>
+                <thead className="sticky top-0 z-20 bg-card text-[10px] uppercase tracking-wider text-zinc-500"><tr><th className="px-6 py-3.5 font-medium">Date</th><th className="px-6 py-3.5 font-medium">Asset</th><th className="px-6 py-3.5 font-medium">Type</th><th className="px-6 py-3.5 font-medium">Quantity</th><th className="px-6 py-3.5 font-medium">Price</th><th className="px-6 py-3.5" /></tr></thead>
                 <tbody>
                   {[...actions].sort((left, right) => right.timestamp - left.timestamp).map((action) => (
-                    <tr key={action.id}>
-                      <td className="whitespace-nowrap px-5 py-3 text-zinc-400">{actionDate(action.timestamp)}</td>
-                      <td className="px-5 py-3"><span className="font-mono text-zinc-200">{action.assetId}</span><span className="ml-2 text-zinc-500">{quoteNames.get(action.assetId.toUpperCase()) ?? ""}</span></td>
-                      <td className="px-5 py-3"><span className={action.isInitialBaseline ? "text-sky-300" : action.direction === "BUY" ? "text-emerald-400" : "text-amber-300"}>{action.isInitialBaseline ? "INITIAL POINT" : action.direction}</span></td>
-                      <td className="px-5 py-3 font-mono text-zinc-300">{action.quantity}</td>
-                      <td className="px-5 py-3 font-mono text-zinc-300">{action.price}</td>
-                      <td className="px-5 py-3 text-right"><button type="button" onClick={() => confirmRemove(action)} aria-label={`Delete ${action.assetId} ${action.direction} action`} className="rounded-md p-1.5 text-zinc-500 hover:bg-rose-500/10 hover:text-rose-400"><Trash2 className="size-3.5" aria-hidden /></button></td>
+                    <tr key={action.id} className="row-glow">
+                      <td className="whitespace-nowrap px-6 py-3.5 font-mono tabular-nums text-zinc-400">{actionDate(action.timestamp)}</td>
+                      <td className="px-6 py-3.5"><span className="font-mono tabular-nums text-zinc-200">{action.assetId}</span><span className="ml-2 text-zinc-500">{quoteNames.get(action.assetId.toUpperCase()) ?? ""}</span></td>
+                      <td className="px-6 py-3.5"><span className={action.isInitialBaseline ? "text-sky-300" : action.direction === "BUY" ? "text-emerald-400" : "text-amber-300"}>{action.isInitialBaseline ? "INITIAL POINT" : action.direction}</span></td>
+                      <td className="px-6 py-3.5 font-mono tabular-nums text-zinc-300">{action.quantity}</td>
+                      <td className="px-6 py-3.5 font-mono tabular-nums text-zinc-300">{action.price}</td>
+                      <td className="px-6 py-3.5 text-right"><motion.button whileTap={TAP} type="button" onClick={() => confirmRemove(action)} aria-label={`Delete ${action.assetId} ${action.direction} action`} className="rounded-xl p-1.5 text-zinc-500 hover:bg-rose-500/10 hover:text-rose-400"><Trash2 className="size-3.5" aria-hidden /></motion.button></td>
                     </tr>
                   ))}
                 </tbody>

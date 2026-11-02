@@ -101,7 +101,7 @@ export function PortfolioActionDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" role="presentation">
-      <div aria-labelledby="action-dialog-title" aria-modal="true" className="w-full max-w-lg border border-input bg-card p-6 shadow-2xl" role="dialog">
+      <div aria-labelledby="action-dialog-title" aria-modal="true" className="w-full max-w-lg rounded-2xl border border-input bg-card p-6 shadow-2xl" role="dialog">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 id="action-dialog-title" className="text-lg font-semibold text-zinc-100">Add portfolio action</h2>
@@ -111,7 +111,7 @@ export function PortfolioActionDialog({
         </div>
         <form onSubmit={submit} className="mt-6 space-y-4">
           <label className="block text-sm text-zinc-300">Date
-            <input required type="date" value={timestamp} onChange={(event) => setTimestamp(event.target.value)} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-zinc-100 outline-none focus:border-primary" />
+            <input required type="date" value={timestamp} onChange={(event) => setTimestamp(event.target.value)} className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-zinc-100 outline-none focus:border-primary" />
           </label>
           <label className="block text-sm text-zinc-300">Asset
             <input required list="portfolio-action-assets" value={assetId} onChange={(event) => {
@@ -119,25 +119,25 @@ export function PortfolioActionDialog({
               setAssetId(nextAssetId);
               const mark = positions.find((item) => item.symbol.toUpperCase() === nextAssetId.toUpperCase());
               if (mark?.livePrice) setPrice(mark.livePrice.toString());
-            }} placeholder="Search tracked assets" className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-sm text-zinc-100 outline-none focus:border-primary" />
+            }} placeholder="Search tracked assets" className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 font-mono tabular-nums text-sm text-zinc-100 outline-none focus:border-primary" />
             <datalist id="portfolio-action-assets">
               {positions.map((item) => <option key={item.symbol} value={item.symbol}>{item.name}</option>)}
             </datalist>
           </label>
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block text-sm text-zinc-300">Quantity
-              <input required inputMode="decimal" value={quantity} onChange={(event) => setQuantity(event.target.value)} placeholder="1.25" className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-sm text-zinc-100 outline-none focus:border-primary" />
+              <input required inputMode="decimal" value={quantity} onChange={(event) => setQuantity(event.target.value)} placeholder="1.25" className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 font-mono tabular-nums text-sm text-zinc-100 outline-none focus:border-primary" />
             </label>
             <label className="block text-sm text-zinc-300">Execution price
-              <input required inputMode="decimal" value={price} onChange={(event) => setPrice(event.target.value)} placeholder="125.00" className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-sm text-zinc-100 outline-none focus:border-primary" />
+              <input required inputMode="decimal" value={price} onChange={(event) => setPrice(event.target.value)} placeholder="125.00" className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 font-mono tabular-nums text-sm text-zinc-100 outline-none focus:border-primary" />
             </label>
           </div>
           <div className="flex items-center justify-between gap-4">
             <fieldset>
               <legend className="mb-2 text-sm text-zinc-300">Direction</legend>
-              <div className="inline-flex border border-input bg-background p-1" aria-label="Action direction">
+              <div className="inline-flex rounded-xl border border-input bg-background p-1" aria-label="Action direction">
                 {(["BUY", "SELL"] as const).map((option) => (
-                  <button key={option} type="button" aria-pressed={direction === option} onClick={() => setDirection(option)} className={`px-4 py-1.5 text-xs font-semibold ${direction === option ? "bg-primary text-primary-foreground" : "text-zinc-400 hover:text-zinc-100"}`}>{option}</button>
+                  <button key={option} type="button" aria-pressed={direction === option} onClick={() => setDirection(option)} className={`rounded-xl px-4 py-1.5 text-xs font-semibold ${direction === option ? "bg-primary text-primary-foreground" : "text-zinc-400 hover:text-zinc-100"}`}>{option}</button>
                 ))}
               </div>
             </fieldset>
@@ -145,8 +145,8 @@ export function PortfolioActionDialog({
           </div>
           {error !== null ? <p role="alert" className="text-sm text-rose-400">{error}</p> : null}
           <div className="flex justify-end gap-2 pt-2">
-            <button type="button" onClick={onClose} className="rounded-md border border-input px-3 py-2 text-sm text-zinc-300 hover:bg-accent">Cancel</button>
-            <button type="submit" className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/85">Save action</button>
+            <button type="button" onClick={onClose} className="rounded-xl border border-input px-3 py-2 text-sm text-zinc-300 hover:bg-accent">Cancel</button>
+            <button type="submit" className="rounded-xl bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/85">Save action</button>
           </div>
         </form>
       </div>
