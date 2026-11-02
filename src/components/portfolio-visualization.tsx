@@ -1,21 +1,24 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
 import {
   allocationBreakdown,
   buildPortfolioTimeline,
   categoryForQuote,
+  sortByValue,
   type PortfolioAction,
   type PositionMark,
   type PortfolioPriceHistory,
   type QuoteSnapshot,
+  type SortDirection,
 } from "@/lib/finance/portfolio";
 import { sumDecimals, toDecimal } from "@/lib/finance/money";
 import { AllocationPieChart } from "@/components/allocation-pie-chart";
 import { PortfolioActionDialog } from "@/components/portfolio-action-dialog";
 import { PortfolioLineChart } from "@/components/portfolio-line-chart";
-import { ScrollWindow } from "@/components/ui/motion";
+import { ScrollWindow, TAP } from "@/components/ui/motion";
 
 type PortfolioVisualizationProps = {
   positions: PositionMark[];
@@ -32,6 +35,11 @@ type PortfolioVisualizationProps = {
 };
 
 const CATEGORY_COLORS = ["#5fa800", "#3b82f6", "#c98300", "#e0509f", "#8b5cf6", "#0d9488"];
+
+const RANK_OPTIONS: { direction: SortDirection; label: string }[] = [
+  { direction: "desc", label: "Big → Small" },
+  { direction: "asc", label: "Small → Big" },
+];
 
 function formatValue(value: ReturnType<typeof toDecimal>, currency: string, usdRate: number | null): string {
   if (usdRate === null || usdRate <= 0) return "—";
@@ -63,6 +71,7 @@ export function PortfolioVisualization({
 }: PortfolioVisualizationProps) {
   const [categorized, setCategorized] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [isActionDialogOpen, setIsActionDialogOpen] = useState(false);
   const [priceHistory, setPriceHistory] = useState<PortfolioPriceHistory[]>([]);
 
@@ -129,7 +138,8 @@ export function PortfolioVisualization({
   }
 
   const quoteNames = new Map(quotes.map((quote) => [quote.symbol.toUpperCase(), quote.name]));
-  const displayRows = categorized
+  // Colors are fixed before ranking so a row keeps its color, and its pie slice, when the order changes.
+  const displayRows = (categorized
     ? categories.map((row) => ({
         key: row.category,
         label: row.category,
@@ -143,7 +153,9 @@ export function PortfolioVisualization({
         members: [row],
         value: row.value,
         weight: row.weight,
-      }));
+      }))
+  ).map((row, index) => ({ ...row, color: CATEGORY_COLORS[index % CATEGORY_COLORS.length] }));
+  const rankedRows = sortByValue(displayRows, sortDirection, (row) => row.key);
   useEffect(() => {
     if (!isActionsHydrated || actions.length === 0 || historySymbols.length === 0) return;
 
@@ -179,48 +191,61 @@ export function PortfolioVisualization({
             <h2 className="text-sm font-medium text-zinc-100">Asset allocation</h2>
             <p className="mt-1 text-xs text-zinc-500">Current marked value, weighted across assets with available quotes.</p>
           </div>
-          <button type="button" aria-pressed={categorized} onClick={() => {
-            setCategorized((current) => !current);
-            setExpandedCategory(null);
-          }} className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-medium transition ${categorized ? "border-primary/60 bg-primary/10 text-primary" : "border-input text-zinc-300 hover:bg-accent"}`}>
-            {categorized ? "Show assets" : "Categorize"}
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <div role="group" aria-label="Rank allocations" className="flex rounded-xl border border-input p-0.5">
+              {RANK_OPTIONS.map((option) => {
+                const isActive = sortDirection === option.direction;
+                return (
+                  <button key={option.direction} type="button" aria-pressed={isActive} onClick={() => setSortDirection(option.direction)} className="relative z-0 rounded-[0.625rem] px-3 py-1.5 text-xs font-medium text-zinc-400 transition-colors hover:text-zinc-100">
+                    {isActive ? <motion.span layoutId="allocation-rank-active" transition={{ type: "spring", stiffness: 420, damping: 34 }} className="absolute inset-0 -z-10 rounded-[0.625rem] bg-primary" /> : null}
+                    <span className={isActive ? "text-primary-foreground" : ""}>{option.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <button type="button" aria-pressed={categorized} onClick={() => {
+              setCategorized((current) => !current);
+              setExpandedCategory(null);
+            }} className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-xs font-medium transition ${categorized ? "border-primary/60 bg-primary/10 text-primary" : "border-input text-zinc-300 hover:bg-accent"}`}>
+              {categorized ? "Show assets" : "Categorize"}
+            </button>
+          </div>
         </div>
         {allocations.length === 0 || totalValue.isZero() ? (
           <p className="flex h-[24rem] items-center justify-center px-5 text-center text-sm text-zinc-500">Allocation appears when live quotes are available.</p>
         ) : (
           <div className="grid gap-6 px-5 py-5 lg:grid-cols-2 lg:items-center">
             <AllocationPieChart
-              rows={displayRows.map((row, index) => ({
+              rows={displayRows.map((row) => ({
                 key: row.key,
                 label: row.label,
                 chartLabel: categorized ? row.label : row.key,
                 value: row.value,
                 weight: row.weight,
-                color: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
+                color: row.color,
               }))}
               currency={displayCurrency}
               usdRate={displayCurrencyUsdRate}
             />
             <ScrollWindow className="h-80 divide-y divide-border pr-3 lg:h-[22rem]">
-              {displayRows.map((row, index) => {
+              {rankedRows.map((row, index) => {
                 const isExpanded = categorized && expandedCategory === row.key;
                 return (
-                  <div key={row.key} className="py-4">
-                    <button type="button" onClick={() => categorized && setExpandedCategory(isExpanded ? null : row.key)} disabled={!categorized} aria-expanded={categorized ? isExpanded : undefined} className={`grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 text-left ${categorized ? "cursor-pointer" : "cursor-default"}`}>
+                  <motion.div key={row.key} layout="position" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.24, ease: "easeOut", delay: Math.min(index, 8) * 0.035, layout: { duration: 0.28, ease: "easeInOut" } }} className="py-4">
+                    <motion.button whileTap={categorized ? TAP : undefined} type="button" onClick={() => categorized && setExpandedCategory(isExpanded ? null : row.key)} disabled={!categorized} aria-expanded={categorized ? isExpanded : undefined} className={`grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 text-left ${categorized ? "cursor-pointer" : "cursor-default"}`}>
                       <span className="flex min-w-0 items-center gap-2 text-sm text-zinc-200">
-                        <span className="size-2 shrink-0 rounded-sm" style={{ backgroundColor: CATEGORY_COLORS[index % CATEGORY_COLORS.length] }} />
+                        <span className="size-2 shrink-0 rounded-sm" style={{ backgroundColor: row.color }} />
                         <span className="truncate">{row.label}</span>
                         {categorized ? (isExpanded ? <ChevronDown className="size-3.5 text-zinc-500" aria-hidden /> : <ChevronRight className="size-3.5 text-zinc-500" aria-hidden />) : null}
                       </span>
                       <span className="text-right font-mono text-xs text-zinc-300">{formatValue(row.value, displayCurrency, displayCurrencyUsdRate)} <span className="ml-2 text-zinc-500">{row.weight.toDecimalPlaces(2).toFixed(2)}%</span></span>
                       <span className="col-span-2 h-1.5 overflow-hidden bg-muted">
-                        <span className="block h-full transition-[width] duration-500 ease-out" style={{ width: `${Math.max(0, Math.min(row.weight.toNumber(), 100))}%`, backgroundColor: CATEGORY_COLORS[index % CATEGORY_COLORS.length] }} />
+                        <span className="block h-full transition-[width] duration-500 ease-out" style={{ width: `${Math.max(0, Math.min(row.weight.toNumber(), 100))}%`, backgroundColor: row.color }} />
                       </span>
-                    </button>
+                    </motion.button>
                     {categorized && isExpanded ? (
                       <div className="ml-4 mt-3 space-y-2 border-l border-border pl-4">
-                        {row.members.map((member) => (
+                        {sortByValue(row.members, sortDirection, (member) => member.symbol).map((member) => (
                           <div key={member.symbol} className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-xs">
                             <span className="truncate text-zinc-400">{member.name} <span className="text-zinc-600">{member.symbol}</span></span>
                             <span className="font-mono text-zinc-400">{formatValue(member.value, displayCurrency, displayCurrencyUsdRate)} · {member.weight.toFixed(2)}%</span>
@@ -228,7 +253,7 @@ export function PortfolioVisualization({
                         ))}
                       </div>
                     ) : null}
-                  </div>
+                  </motion.div>
                 );
               })}
             </ScrollWindow>
