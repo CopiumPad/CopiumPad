@@ -15,6 +15,7 @@ import { sumDecimals, toDecimal } from "@/lib/finance/money";
 import { AllocationPieChart } from "@/components/allocation-pie-chart";
 import { PortfolioActionDialog } from "@/components/portfolio-action-dialog";
 import { PortfolioLineChart } from "@/components/portfolio-line-chart";
+import { ScrollWindow } from "@/components/ui/motion";
 
 type PortfolioVisualizationProps = {
   positions: PositionMark[];
@@ -186,9 +187,9 @@ export function PortfolioVisualization({
           </button>
         </div>
         {allocations.length === 0 || totalValue.isZero() ? (
-          <p className="px-5 py-10 text-center text-sm text-zinc-500">Allocation appears when live quotes are available.</p>
+          <p className="flex h-[24rem] items-center justify-center px-5 text-center text-sm text-zinc-500">Allocation appears when live quotes are available.</p>
         ) : (
-          <div className="space-y-5 px-5 py-5">
+          <div className="grid gap-6 px-5 py-5 lg:grid-cols-2 lg:items-center">
             <AllocationPieChart
               rows={displayRows.map((row, index) => ({
                 key: row.key,
@@ -201,11 +202,11 @@ export function PortfolioVisualization({
               currency={displayCurrency}
               usdRate={displayCurrencyUsdRate}
             />
-            <div className="divide-y divide-border">
+            <ScrollWindow className="h-80 divide-y divide-border pr-3 lg:h-[22rem]">
               {displayRows.map((row, index) => {
                 const isExpanded = categorized && expandedCategory === row.key;
                 return (
-                  <div key={row.key} className="allocation-row-enter py-4" style={{ animationDelay: `${Math.min(index, 8) * 35}ms` }}>
+                  <div key={row.key} className="py-4">
                     <button type="button" onClick={() => categorized && setExpandedCategory(isExpanded ? null : row.key)} disabled={!categorized} aria-expanded={categorized ? isExpanded : undefined} className={`grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 text-left ${categorized ? "cursor-pointer" : "cursor-default"}`}>
                       <span className="flex min-w-0 items-center gap-2 text-sm text-zinc-200">
                         <span className="size-2 shrink-0 rounded-sm" style={{ backgroundColor: CATEGORY_COLORS[index % CATEGORY_COLORS.length] }} />
@@ -230,7 +231,7 @@ export function PortfolioVisualization({
                   </div>
                 );
               })}
-            </div>
+            </ScrollWindow>
           </div>
         )}
         <div className="flex justify-between border-t border-border px-5 py-3 text-xs text-zinc-500">
@@ -278,11 +279,11 @@ export function PortfolioVisualization({
           <ChevronDown className="size-4 text-zinc-500 transition group-open:rotate-180" aria-hidden />
         </summary>
         <div className="border-t border-border">
-          {!isActionsHydrated ? <p className="px-5 py-8 text-center text-sm text-zinc-500">Loading action history…</p> : actions.length === 0 ? <p className="px-5 py-8 text-center text-sm text-zinc-500">No actions recorded. Set an initial point to establish a starting quantity.</p> : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[640px] text-left text-xs">
-                <thead className="text-[10px] uppercase tracking-wider text-zinc-500"><tr><th className="px-5 py-3 font-medium">Date</th><th className="px-5 py-3 font-medium">Asset</th><th className="px-5 py-3 font-medium">Type</th><th className="px-5 py-3 font-medium">Quantity</th><th className="px-5 py-3 font-medium">Price</th><th className="px-5 py-3" /></tr></thead>
-                <tbody className="divide-y divide-border">
+          {!isActionsHydrated ? <p className="flex h-80 items-center justify-center px-5 text-center text-sm text-zinc-500">Loading action history…</p> : actions.length === 0 ? <p className="flex h-80 items-center justify-center px-5 text-center text-sm text-zinc-500">No actions recorded. Set an initial point to establish a starting quantity.</p> : (
+            <ScrollWindow className="h-80">
+              <table className="w-full min-w-[640px] border-separate border-spacing-0 text-left text-xs [&_td]:border-b [&_td]:border-border [&_th]:border-b [&_th]:border-border">
+                <thead className="sticky top-0 z-20 bg-card text-[10px] uppercase tracking-wider text-zinc-500"><tr><th className="px-5 py-3 font-medium">Date</th><th className="px-5 py-3 font-medium">Asset</th><th className="px-5 py-3 font-medium">Type</th><th className="px-5 py-3 font-medium">Quantity</th><th className="px-5 py-3 font-medium">Price</th><th className="px-5 py-3" /></tr></thead>
+                <tbody>
                   {[...actions].sort((left, right) => right.timestamp - left.timestamp).map((action) => (
                     <tr key={action.id}>
                       <td className="whitespace-nowrap px-5 py-3 text-zinc-400">{actionDate(action.timestamp)}</td>
@@ -295,7 +296,7 @@ export function PortfolioVisualization({
                   ))}
                 </tbody>
               </table>
-            </div>
+            </ScrollWindow>
           )}
         </div>
       </details>

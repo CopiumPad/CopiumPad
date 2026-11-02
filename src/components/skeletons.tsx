@@ -51,7 +51,7 @@ export function DashboardSkeleton() {
         <div className="border-b border-border px-5 py-4">
           <SkeletonBlock className="h-9 w-full max-w-2xl rounded-lg" />
         </div>
-        <div className="divide-y divide-border">
+        <div className="h-window-main divide-y divide-border overflow-hidden">
           {Array.from({ length: SKELETON_ROWS }, (_, index) => <TableRowSkeleton key={index} />)}
         </div>
       </section>

@@ -5,6 +5,7 @@ import {
   ArrowUpRight,
   ChartLine,
   ExternalLink,
+  RefreshCw,
   Search,
   TrendingUp,
   X,
@@ -16,6 +17,7 @@ import {
   formatSignedUsd,
 } from "@/lib/finance/money";
 import type { QuoteSnapshot } from "@/lib/finance/portfolio";
+import { ScrollWindow } from "@/components/ui/motion";
 
 const EXPLORE_STORAGE_KEY = "copiumpad_explore_symbols";
 
@@ -180,8 +182,8 @@ export function ExploreView({ routeSymbol, onReturnToWatchlist }: ExploreViewPro
 
   return (
     <div className="space-y-8">
-      <section className="grid gap-6 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
-        <div className="rounded-xl border border-border bg-card p-5">
+      <section className="grid gap-6 lg:h-[32rem] lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+        <div className="flex min-h-0 flex-col rounded-xl border border-border bg-card p-5">
           <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-primary">
             <Search className="size-3.5" aria-hidden />
             Search securities and crypto
@@ -202,7 +204,7 @@ export function ExploreView({ routeSymbol, onReturnToWatchlist }: ExploreViewPro
           </form>
           {searchError ? <p className="mt-2 text-xs text-rose-400">{searchError}</p> : null}
           {searchResults.length > 0 ? (
-            <div className="mt-4 divide-y divide-border rounded-lg border border-border bg-background">
+            <ScrollWindow className="mt-4 max-h-64 divide-y divide-border rounded-lg border border-border bg-background lg:max-h-none lg:min-h-0 lg:flex-1">
               {searchResults.map((result) => {
                 const isAdded = exploredSymbols.includes(result.symbol);
                 return (
@@ -218,22 +220,25 @@ export function ExploreView({ routeSymbol, onReturnToWatchlist }: ExploreViewPro
                   </div>
                 );
               })}
-            </div>
+            </ScrollWindow>
           ) : null}
         </div>
 
-        <section className="rounded-xl border border-border bg-card" aria-labelledby="explored-assets-heading">
-          <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
+        <section className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card" aria-labelledby="explored-assets-heading">
+          <div className="flex shrink-0 items-start justify-between gap-4 border-b border-border px-5 py-4">
             <div>
               <h2 id="explored-assets-heading" className="text-sm font-medium tracking-wide text-zinc-200">Explore set</h2>
               <p className="mt-1 text-xs text-zinc-500">Your saved market comparisons</p>
             </div>
-            <span className="rounded-full border border-border px-2 py-1 text-xs text-zinc-500">{exploredSymbols.length} assets</span>
+            <span className="flex shrink-0 items-center gap-2">
+              {isLoadingQuotes ? <RefreshCw role="status" aria-label="Refreshing explored quotes" className="size-3.5 animate-spin text-primary" /> : null}
+              <span className="rounded-full border border-border px-2 py-1 text-xs text-zinc-500">{exploredSymbols.length} assets</span>
+            </span>
           </div>
           {exploredSymbols.length === 0 ? (
-            <div className="px-5 py-12 text-center text-sm text-zinc-500">Search for an asset to start comparing markets.</div>
+            <div className="flex h-80 items-center justify-center px-5 text-center text-sm text-zinc-500 lg:h-auto lg:min-h-0 lg:flex-1">Search for an asset to start comparing markets.</div>
           ) : (
-            <div className="divide-y divide-border">
+            <ScrollWindow className="h-80 divide-y divide-border lg:h-auto lg:min-h-0 lg:flex-1">
               {exploredSymbols.map((symbol) => {
                 const quote = quotes.find((item) => item.symbol === symbol);
                 const isSelected = selectedSymbol === symbol;
@@ -248,13 +253,12 @@ export function ExploreView({ routeSymbol, onReturnToWatchlist }: ExploreViewPro
                   </div>
                 );
               })}
-            </div>
+            </ScrollWindow>
           )}
         </section>
       </section>
 
       {quoteError ? <p className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">{quoteError}</p> : null}
-      {isLoadingQuotes ? <p className="text-sm text-zinc-500">Refreshing explored quotes...</p> : null}
       {selectedQuote ? (
         <section className="rounded-xl border border-border bg-card" aria-live="polite">
           <div className="flex flex-col gap-4 border-b border-border px-5 py-5 sm:flex-row sm:items-start sm:justify-between">

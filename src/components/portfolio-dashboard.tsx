@@ -34,6 +34,7 @@ import { usePortfolioStorage } from "@/hooks/usePortfolioStorage";
 import { usePortfolioActions } from "@/hooks/usePortfolioActions";
 import type { AppView } from "@/components/app-header";
 import { SkeletonBlock } from "@/components/skeletons";
+import { ScrollWindow } from "@/components/ui/motion";
 import { DEFAULT_ACTIONS } from "@/lib/constants/defaultData";
 import { isValidHoldingValue } from "@/lib/queries/positions";
 
@@ -332,6 +333,8 @@ export function PortfolioDashboard({
 
     return [...clusters.values()];
   }, [positions, quotes]);
+  const isSearchPanelOpen = searchError !== null || searchResults.length > 0 || (hasSearched && !isSearching);
+
   function quoteFor(symbol: string): QuoteSnapshot | undefined {
     return quotes.find((quote) => quote.symbol.toUpperCase() === symbol.toUpperCase());
   }
@@ -388,6 +391,12 @@ export function PortfolioDashboard({
     }
   }
 
+  function dismissSearch() {
+    setSearchResults([]);
+    setHasSearched(false);
+    setSearchError(null);
+  }
+
   function selectSearchResult(result: SearchResult) {
     if (!isAuthenticated) {
       requestSignIn();
@@ -396,8 +405,7 @@ export function PortfolioDashboard({
     setPositionDialogInitial({ symbol: result.symbol, name: result.name });
     setIsPositionDialogOpen(true);
     setSearchQuery("");
-    setSearchResults([]);
-    setSearchError(null);
+    dismissSearch();
   }
 
   function openNewPositionDialog() {
@@ -568,59 +576,69 @@ export function PortfolioDashboard({
             </div>
           </div>
           <div className="border-b border-border px-5 py-4">
-            <form onSubmit={searchAssets} className="flex max-w-2xl gap-2">
-              <div className="relative min-w-0 flex-1">
-                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" aria-hidden />
-                <input
-                  aria-label="Search assets to add to Watchlists"
-                  value={searchQuery}
-                  onChange={(event) => {
-                    setSearchQuery(event.target.value);
-                    setSearchResults([]);
-                    setHasSearched(false);
-                    setSearchError(null);
-                  }}
-                  placeholder="Search ticker, company, or crypto..."
-                  className="w-full rounded-lg border border-input bg-background py-2 pl-9 pr-3 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-primary"
-                />
-              </div>
-              <button type="submit" disabled={isSearching} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/85 disabled:cursor-not-allowed disabled:opacity-60">
-                {isSearching ? "Searching..." : "Search"}
-              </button>
-            </form>
-            {searchError !== null ? <p className="mt-2 text-xs text-rose-400">{searchError}</p> : null}
-            {searchResults.length > 0 ? (
-              <div className="mt-3 max-w-2xl divide-y divide-border rounded-lg border border-border bg-background">
-                {searchResults.map((result) => {
-                  const alreadyHeld = holdings.some((holding) => holding.symbol.toUpperCase() === result.symbol.toUpperCase());
-                  return (
-                    <button
-                      key={`${result.symbol}-${result.exchange}`}
-                      type="button"
-                      onClick={() => selectSearchResult(result)}
-                      disabled={alreadyHeld}
-                      className="flex w-full items-center justify-between gap-4 px-3 py-3 text-left transition hover:bg-accent disabled:cursor-default disabled:hover:bg-transparent"
-                    >
-                      <span className="min-w-0">
-                        <span className="block truncate font-mono text-sm text-zinc-100">{result.symbol}</span>
-                        <span className="block truncate text-xs text-zinc-500">{result.name}</span>
-                      </span>
-                      <span className="shrink-0 text-right text-xs text-zinc-500">
-                        <span className="block">{result.exchange} · {result.type}</span>
-                        {alreadyHeld ? <span className="mt-1 block text-primary">In Watchlists</span> : <span className="mt-1 block text-primary">Add holding</span>}
-                      </span>
+            <div className="relative max-w-2xl" onKeyDown={(event) => { if (event.key === "Escape") dismissSearch(); }}>
+              <form onSubmit={searchAssets} className="flex gap-2">
+                <div className="relative min-w-0 flex-1">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" aria-hidden />
+                  <input
+                    aria-label="Search assets to add to Watchlists"
+                    value={searchQuery}
+                    onChange={(event) => {
+                      setSearchQuery(event.target.value);
+                      dismissSearch();
+                    }}
+                    placeholder="Search ticker, company, or crypto..."
+                    className="w-full rounded-lg border border-input bg-background py-2 pl-9 pr-3 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-primary"
+                  />
+                </div>
+                <button type="submit" disabled={isSearching} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/85 disabled:cursor-not-allowed disabled:opacity-60">
+                  {isSearching ? "Searching..." : "Search"}
+                </button>
+              </form>
+              {isSearchPanelOpen ? (
+                <div className="absolute inset-x-0 top-full z-30 mt-2 overflow-hidden rounded-lg border border-input bg-popover shadow-2xl shadow-black">
+                  <div className="flex items-center justify-between gap-3 border-b border-border py-1.5 pl-3 pr-1.5">
+                    <span className="text-[11px] uppercase tracking-wider text-zinc-500">Search results</span>
+                    <button type="button" onClick={dismissSearch} aria-label="Close search results" className="rounded-md p-1 text-zinc-500 transition hover:bg-accent hover:text-zinc-100">
+                      <X className="size-3.5" aria-hidden />
                     </button>
-                  );
-                })}
-              </div>
-            ) : null}
-            {!isSearching && hasSearched && searchResults.length === 0 && searchError === null ? (
-              <p className="mt-2 text-xs text-zinc-500">No matching assets found.</p>
-            ) : null}
+                  </div>
+                  {searchError !== null ? <p className="px-3 py-3 text-xs text-rose-400">{searchError}</p> : null}
+                  {searchResults.length > 0 ? (
+                    <ScrollWindow className="max-h-64 divide-y divide-border">
+                      {searchResults.map((result) => {
+                        const alreadyHeld = holdings.some((holding) => holding.symbol.toUpperCase() === result.symbol.toUpperCase());
+                        return (
+                          <button
+                            key={`${result.symbol}-${result.exchange}`}
+                            type="button"
+                            onClick={() => selectSearchResult(result)}
+                            disabled={alreadyHeld}
+                            className="flex w-full items-center justify-between gap-4 px-3 py-3 text-left transition hover:bg-accent disabled:cursor-default disabled:hover:bg-transparent"
+                          >
+                            <span className="min-w-0">
+                              <span className="block truncate font-mono text-sm text-zinc-100">{result.symbol}</span>
+                              <span className="block truncate text-xs text-zinc-500">{result.name}</span>
+                            </span>
+                            <span className="shrink-0 text-right text-xs text-zinc-500">
+                              <span className="block">{result.exchange} · {result.type}</span>
+                              {alreadyHeld ? <span className="mt-1 block text-primary">In Watchlists</span> : <span className="mt-1 block text-primary">Add holding</span>}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </ScrollWindow>
+                  ) : null}
+                  {searchResults.length === 0 && searchError === null ? (
+                    <p className="px-3 py-3 text-xs text-zinc-500">No matching assets found.</p>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[920px] text-left text-sm">
-              <thead className="border-b border-border text-xs uppercase tracking-wider text-zinc-500">
+          <ScrollWindow className="h-window-main">
+            <table className="w-full min-w-[920px] border-separate border-spacing-0 text-left text-sm [&_td]:border-b [&_td]:border-border [&_th]:border-b [&_th]:border-border">
+              <thead className="sticky top-0 z-20 bg-card text-xs uppercase tracking-wider text-zinc-500">
                 <tr>
                   <th className="px-5 py-3 font-medium">Symbol / Name</th>
                   <th className="px-5 py-3 font-medium">Avg Cost</th>
@@ -634,8 +652,8 @@ export function PortfolioDashboard({
                 </tr>
               </thead>
               {watchlistClusters.map((cluster) => (
-                <tbody key={cluster.key} className="divide-y divide-border font-mono text-[13px]">
-                  <tr className="bg-background/70">
+                <tbody key={cluster.key} className="font-mono text-[13px]">
+                  <tr className="bg-background">
                     <th colSpan={7} className="px-5 py-2 text-left font-sans text-[11px] font-medium uppercase tracking-[0.16em] text-primary">
                       {cluster.label}
                       <span className="ml-2 text-zinc-600">{cluster.positions.length}</span>
@@ -749,8 +767,15 @@ export function PortfolioDashboard({
                   ))}
                 </tbody>
               ))}
+              {positions.length === 0 ? (
+                <tbody>
+                  <tr>
+                    <td colSpan={7} className="px-5 py-16 text-center text-sm text-zinc-500">No holdings yet. Search above or add one to start tracking.</td>
+                  </tr>
+                </tbody>
+              ) : null}
             </table>
-          </div>
+          </ScrollWindow>
         </motion.section> : activeView === "visualization" ? (
           <motion.div key="visualization" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.2, ease: "easeOut" }}>
             <PortfolioVisualization
