@@ -1,20 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Bell, CalendarClock, CircleDollarSign, X } from "lucide-react";
+import { Suspense, useEffect, useState } from "react";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { Bell, CalendarClock, CircleDollarSign, Trash2, X } from "lucide-react";
+import { QueryErrorBoundary } from "@/components/query-error-boundary";
+import { AlertListSkeleton } from "@/components/skeletons";
+import {
+  ALERT_COLUMNS,
+  alertsQueryOptions,
+  deleteAlertMutationOptions,
+  prependAlert,
+  type AlertRecord,
+  type AlertType,
+} from "@/lib/queries/alerts";
+import { queryKeys } from "@/lib/queries/keys";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-
-type AlertType = "price" | "deposit";
-type AlertRecord = {
-  id: string;
-  type: AlertType;
-  target_symbol: string | null;
-  target_price: number | string | null;
-  target_time: string | null;
-  custom_message: string;
-  is_triggered: boolean;
-  created_at: string;
-};
 
 type NotificationModalProps = {
   userId: string;
@@ -29,39 +29,48 @@ function localDateTimeMin(): string {
     .slice(0, 16);
 }
 
+function RecentAlerts({ userId }: { userId: string }) {
+  const queryClient = useQueryClient();
+  const { data: alerts } = useSuspenseQuery(alertsQueryOptions(createSupabaseBrowserClient, userId));
+  const { mutate: deleteAlert, error } = useMutation(deleteAlertMutationOptions({
+    queryClient,
+    getClient: createSupabaseBrowserClient,
+    userId,
+  }));
+
+  return (
+    <>
+      {error ? <p role="alert" className="mt-2 text-xs text-red-400">{error.message}</p> : null}
+      {alerts.length === 0 ? <p className="mt-3 text-xs text-zinc-500">No alerts configured.</p> : (
+        <ul className="mt-2 divide-y divide-zinc-800">
+          {alerts.map((alert) => (
+            <li key={alert.id} className="flex items-start justify-between gap-3 py-2.5">
+              <div className="min-w-0">
+                <p className="truncate font-mono text-xs text-zinc-200">{alert.type === "price" ? `${alert.target_symbol} · ${alert.target_price}` : `Deposit · ${alert.target_time ? new Date(alert.target_time).toLocaleString() : "Time not set"}`}</p>
+                <p className="mt-0.5 truncate text-[11px] text-zinc-500">{alert.custom_message}</p>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <span className={`text-[10px] ${alert.is_triggered ? "text-emerald-400" : "text-zinc-500"}`}>{alert.is_triggered ? "Triggered" : "Pending"}</span>
+                <button type="button" onClick={() => deleteAlert(alert.id)} aria-label={`Delete alert: ${alert.custom_message}`} className="rounded-md p-1 text-zinc-500 transition hover:bg-red-500/10 hover:text-red-400"><Trash2 className="size-3.5" aria-hidden /></button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
+  );
+}
+
 export function NotificationModal({ userId, onClose }: NotificationModalProps) {
+  const queryClient = useQueryClient();
   const [activeType, setActiveType] = useState<AlertType>("price");
   const [symbol, setSymbol] = useState("");
   const [targetPrice, setTargetPrice] = useState("");
   const [targetTime, setTargetTime] = useState("");
   const [customMessage, setCustomMessage] = useState("");
-  const [alerts, setAlerts] = useState<AlertRecord[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    void createSupabaseBrowserClient()
-      .from("alerts")
-      .select("id, type, target_symbol, target_price, target_time, custom_message, is_triggered, created_at")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(8)
-      .then(({ data, error: queryError }: { data: AlertRecord[] | null; error: Error | null }) => {
-        if (!active) return;
-        if (queryError) setError(queryError.message);
-        else setAlerts(data ?? []);
-      })
-      .catch((loadError: unknown) => {
-        if (active) setError(loadError instanceof Error ? loadError.message : "Could not load alerts.");
-      })
-      .finally(() => {
-        if (active) setIsLoading(false);
-      });
-    return () => { active = false; };
-  }, [userId]);
 
   useEffect(() => {
     function closeOnEscape(event: KeyboardEvent) {
@@ -124,10 +133,10 @@ export function NotificationModal({ userId, onClose }: NotificationModalProps) {
           custom_message: message,
           is_triggered: false,
         })
-        .select("id, type, target_symbol, target_price, target_time, custom_message, is_triggered, created_at")
+        .select(ALERT_COLUMNS)
         .single();
       if (insertError) throw insertError;
-      setAlerts((current) => [data as AlertRecord, ...current].slice(0, 8));
+      queryClient.setQueryData<AlertRecord[]>(queryKeys.alerts(userId), (current = []) => prependAlert(current, data as AlertRecord));
       setCustomMessage("");
       setNotice("Alert saved. Email will be sent when it is triggered.");
     } catch (saveError) {
@@ -187,19 +196,11 @@ export function NotificationModal({ userId, onClose }: NotificationModalProps) {
 
         <div className="border-t border-zinc-800 px-5 py-4 sm:px-6">
           <h3 className="text-xs font-medium text-zinc-300">Recent alerts</h3>
-          {isLoading ? <p className="mt-3 text-xs text-zinc-500">Loading alerts…</p> : alerts.length === 0 ? <p className="mt-3 text-xs text-zinc-500">No alerts configured.</p> : (
-            <ul className="mt-2 divide-y divide-zinc-800">
-              {alerts.map((alert) => (
-                <li key={alert.id} className="flex items-start justify-between gap-3 py-2.5">
-                  <div className="min-w-0">
-                    <p className="truncate font-mono text-xs text-zinc-200">{alert.type === "price" ? `${alert.target_symbol} · ${alert.target_price}` : `Deposit · ${alert.target_time ? new Date(alert.target_time).toLocaleString() : "Time not set"}`}</p>
-                    <p className="mt-0.5 truncate text-[11px] text-zinc-500">{alert.custom_message}</p>
-                  </div>
-                  <span className={`shrink-0 text-[10px] ${alert.is_triggered ? "text-emerald-400" : "text-zinc-500"}`}>{alert.is_triggered ? "Triggered" : "Pending"}</span>
-                </li>
-              ))}
-            </ul>
-          )}
+          <QueryErrorBoundary>
+            <Suspense fallback={<AlertListSkeleton />}>
+              <RecentAlerts userId={userId} />
+            </Suspense>
+          </QueryErrorBoundary>
         </div>
       </section>
     </div>
